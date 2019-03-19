@@ -7,18 +7,22 @@ const customGamesRouter = require("./routes/custom-games");
 const port = process.env.PORT || 4000;
 const app = express();
 
-if (process.env.NODE_ENV === "production") {
-  // Serve static files from the React frontend app
-  app.use(express.static(path.join(__dirname, "client/build")));
-  // Anything that doesn't match the above, send back index.html
-  app.get("*", (req, res) => {
-    res.sendFile(path.join(__dirname + "/client/build/index.html"));
-  });
-}
-
 app.use(logger("dev"));
 app.use(express.json());
 
+// Serve static files from the React app
+app.use(express.static(path.join(__dirname, "client/build")));
+
 app.use("/custom-games", customGamesRouter);
+
+app.get("/ping", function(req, res) {
+  return res.send("pong");
+});
+
+// The "catchall" handler: for any request that doesn't
+// match one above, send back React's index.html file.
+app.get("*", (req, res) => {
+  res.sendFile(path.join(__dirname + "/client/build/index.html"));
+});
 
 app.listen(port, () => console.log(`Server started on port ${port}`));
