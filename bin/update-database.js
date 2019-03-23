@@ -4,7 +4,7 @@ const fetch = require("node-fetch");
 const models = require("../models/game-stats");
 const mongoose = require("mongoose");
 
-const db = require("../config/keys").mongoURI;
+const db = process.env.DATABASE_URL;
 
 mongoose
   .connect(db, { useNewUrlParser: true })
@@ -41,7 +41,7 @@ const DownloadPlayerCounts = async () => {
     "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?"
   );
   const topGames = await request.json();
-  const numGamesToGet = 5; // set to 1 for testing
+  const numGamesToGet = 100;
   let topGamesData = topGames.result.custom_games.slice(0, numGamesToGet);
 
   let gamesToAdd = [];
