@@ -15,10 +15,6 @@ app.use(express.static(path.join(__dirname, "client/build")));
 
 app.use("/custom-games", customGamesRouter);
 
-app.get("/ping", function(req, res) {
-  return res.send("pong");
-});
-
 // The "catchall" handler: for any request that doesn't
 // match one above, send back React's index.html file.
 app.get("*", (req, res) => {

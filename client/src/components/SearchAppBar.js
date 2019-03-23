@@ -2,13 +2,12 @@ import React from "react";
 import PropTypes from "prop-types";
 import AppBar from "@material-ui/core/AppBar";
 import Toolbar from "@material-ui/core/Toolbar";
-import IconButton from "@material-ui/core/IconButton";
 import Typography from "@material-ui/core/Typography";
 import InputBase from "@material-ui/core/InputBase";
 import { fade } from "@material-ui/core/styles/colorManipulator";
 import { withStyles } from "@material-ui/core/styles";
-import MenuIcon from "@material-ui/icons/Menu";
 import SearchIcon from "@material-ui/icons/Search";
+import { NavLink } from "react-router-dom";
 
 const styles = theme => ({
   root: {
@@ -86,22 +85,19 @@ class SearchAppBar extends React.Component {
       <div className={classes.root}>
         <AppBar position="static">
           <Toolbar>
-            {/* <IconButton
-              className={classes.menuButton}
-              color="inherit"
-              aria-label="Open drawer"
-              onclick={this.onMenuButtonClicked}
+            <NavLink
+              style={{ textDecoration: "none", color: "inherit" }}
+              to="/"
             >
-              <MenuIcon />
-            </IconButton> */}
-            <Typography
-              className={classes.title}
-              variant="h6"
-              color="inherit"
-              noWrap
-            >
-              Custom Game Stats
-            </Typography>
+              <Typography
+                className={classes.title}
+                variant="h6"
+                color="inherit"
+                noWrap
+              >
+                Custom Game Stats
+              </Typography>
+            </NavLink>
             <div className={classes.grow} />
             <div className={classes.search}>
               <div className={classes.searchIcon}>

@@ -11,6 +11,7 @@ import TableSortLabel from "@material-ui/core/TableSortLabel";
 import Paper from "@material-ui/core/Paper";
 import Tooltip from "@material-ui/core/Tooltip";
 import Avatar from "@material-ui/core/Avatar";
+import { Link as RouterLink } from "react-router-dom";
 import Link from "@material-ui/core/Link";
 
 function desc(a, b, orderBy) {
@@ -144,7 +145,7 @@ const styles = theme => ({
   avatar: {
     marginRight: "6px"
   },
-  test: {
+  nameHolder: {
     display: "flex",
     alignItems: "center"
   }
@@ -183,6 +184,10 @@ class EnhancedTable extends React.Component {
     }
 
     this.setState({ order, orderBy });
+
+    this.setState({
+      data: stableSort(this.state.data, getSorting(order, orderBy))
+    });
   };
 
   handleChangePage = (event, page) => {
@@ -208,55 +213,13 @@ class EnhancedTable extends React.Component {
               orderBy={orderBy}
               onRequestSort={this.handleRequestSort}
             />
-            <TableBody>
-              {stableSort(data, getSorting(order, orderBy))
-                .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
-                .map(game => {
-                  return (
-                    <TableRow
-                      className={classes.row}
-                      hover
-                      tabIndex={-1}
-                      key={game.id}
-                    >
-                      <TableCell>{game.rank}</TableCell>
-                      <TableCell>
-                        <div className={classes.test}>
-                          <Avatar
-                            alt={game.title}
-                            src={game.preview_url}
-                            className={classes.avatar}
-                          />
-                          {game.title}
-                        </div>
-                      </TableCell>
-                      <TableCell align="right">
-                        <Link
-                          href={`https://steamcommunity.com/sharedfiles/filedetails/?id=${
-                            game.id
-                          }`}
-                        >
-                          {game.id}
-                        </Link>
-                      </TableCell>
-                      <TableCell align="right">{game.player_count}</TableCell>
-                      <TableCell align="right">{game.subscriptions}</TableCell>
-                      <TableCell align="right">{game.views}</TableCell>
-                      <TableCell align="right">{game.favorites}</TableCell>
-                      <TableCell align="right">
-                        {new Date(game.last_update * 1000).toLocaleDateString(
-                          "en-US"
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              {emptyRows > 0 && (
-                <TableRow style={{ height: 49 * emptyRows }}>
-                  <TableCell colSpan={6} />
-                </TableRow>
-              )}
-            </TableBody>
+            <EnhancedTableBody
+              data={data}
+              classes={classes}
+              emptyRows={emptyRows}
+              rowsPerPage={rowsPerPage}
+              page={page}
+            />
           </Table>
         </div>
         <TablePagination
@@ -275,6 +238,71 @@ class EnhancedTable extends React.Component {
           onChangeRowsPerPage={this.handleChangeRowsPerPage}
         />
       </Paper>
+    );
+  }
+}
+
+class EnhancedTableBody extends React.PureComponent {
+  render() {
+    const { data, classes, emptyRows, rowsPerPage, page } = this.props;
+    return (
+      <TableBody>
+        {data
+          .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
+          .map(game => {
+            return (
+              <TableRow
+                className={classes.row}
+                hover
+                tabIndex={-1}
+                key={game.id}
+              >
+                <TableCell>{game.rank}</TableCell>
+                <TableCell>
+                  <div className={classes.nameHolder}>
+                    <Avatar
+                      alt={game.title}
+                      src={game.preview_url}
+                      className={classes.avatar}
+                    />
+                    <Link component={RouterLink} to={`/games/${game.id}`}>
+                      {game.title}
+                    </Link>
+                  </div>
+                </TableCell>
+                <TableCell align="right">
+                  <Link
+                    href={`https://steamcommunity.com/sharedfiles/filedetails/?id=${
+                      game.id
+                    }`}
+                  >
+                    {game.id}
+                  </Link>
+                </TableCell>
+                <TableCell align="right">
+                  {game.player_count.toLocaleString()}
+                </TableCell>
+                <TableCell align="right">
+                  {game.subscriptions.toLocaleString()}
+                </TableCell>
+                <TableCell align="right">
+                  {game.views.toLocaleString()}
+                </TableCell>
+                <TableCell align="right">
+                  {game.favorites.toLocaleString()}
+                </TableCell>
+                <TableCell align="right">
+                  {new Date(game.last_update * 1000).toLocaleDateString()}
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        {emptyRows > 0 && (
+          <TableRow style={{ height: 49 * emptyRows }}>
+            <TableCell colSpan={6} />
+          </TableRow>
+        )}
+      </TableBody>
     );
   }
 }
