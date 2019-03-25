@@ -49,7 +49,7 @@ const DownloadPlayerCounts = async () => {
   for (let whitelistGame of whitelist) {
     let foundGame = false;
     for (let topGameData of topGamesData) {
-      if (foundGame == topGameData.id) {
+      if (whitelistGame == topGameData.id) {
         foundGame = true;
         break;
       }
@@ -71,12 +71,11 @@ const DownloadPlayerCounts = async () => {
 
   const results = await Promise.all(promises);
 
-  models.PlayerCount.insertMany(results, function(err) {
+  await models.PlayerCount.create(results, function(err) {
     if (err) console.log(err);
     console.log("saved");
     process.exit();
   });
 };
 
-console.log("In Update Database");
 DownloadPlayerCounts();

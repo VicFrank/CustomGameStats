@@ -2,7 +2,9 @@ const express = require("express");
 const router = express.Router();
 const fetch = require("node-fetch");
 const apicache = require("apicache");
+
 const GetPublishedFileDetails = require("../libraries/dota-api");
+const models = require("../models/game-stats");
 
 let cache = apicache.middleware;
 
@@ -27,6 +29,12 @@ const GetStatsForGame = async gameid => {
       player_count = game_stats.player_count;
       spectator_count = game_stats.spectator_count;
     }
+
+    // Get the data from the database
+    const records = await GetRecordsForGame(gameid);
+
+    let allTimePeak = records.allTimePeak;
+    let dailyPeak = records.dailyPeak;
 
     // Get the other stats
     let preview_url;
@@ -62,8 +70,12 @@ const GetStatsForGame = async gameid => {
       favorites: favorites,
       lifetime_subscriptions: lifetime_subscriptions,
       lifetime_favorites: lifetime_favorites,
-      views: views
+      views: views,
+      dailyPeak: dailyPeak,
+      allTimePeak: allTimePeak
     };
+
+    console.log(stats);
 
     return stats;
   } catch (error) {
@@ -72,6 +84,33 @@ const GetStatsForGame = async gameid => {
       id: gameid
     };
   }
+};
+
+const GetRecordsForGame = async gameid => {
+  let gameStats = await models.GameStats.findOne({ gameid: gameid })
+    .populate("allTimePeak")
+    .populate("dailyPeak");
+
+  if (!gameStats) {
+    return {
+      dailyPeak: -1,
+      allTimePeak: -1
+    };
+  }
+
+  if (!gameStats.allTimePeak) {
+    return {
+      dailyPeak: 0,
+      allTimePeak: 0
+    };
+  }
+
+  const dailyPeak = gameStats.dailyPeak.playercount;
+  const allTimePeak = gameStats.allTimePeak.playercount;
+  return {
+    dailyPeak: dailyPeak,
+    allTimePeak: allTimePeak
+  };
 };
 
 // I'd really like if this data would get cached somewhere else so it

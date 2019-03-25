@@ -31,8 +31,6 @@ const AddAllGames = async () => {
       if (itemDetails != null) {
         title = itemDetails.title;
       }
-      // Instead of doing upsert, we should manually check if it exists
-      // so we don't override dailyPeak and allTimePeak
 
       models.GameStats.findOneAndUpdate(
         { gameid: gameid },
