@@ -17,11 +17,11 @@ const styles = theme => ({
     marginTop: "1.5rem"
   },
   media: {
-    height: 380
+    height: 475
   },
   leftInfo: {
     width: 600,
-    height: 433,
+    height: 528,
     marginRight: 20
   },
   table: {
@@ -46,7 +46,9 @@ class GameStats extends Component {
     spectator_count: 0,
     subscriptions: 0,
     title: "",
-    views: 0
+    views: 0,
+    dailyPeak: 0,
+    allTimePeak: 0
   };
 
   componentDidMount() {
@@ -71,7 +73,9 @@ class GameStats extends Component {
       lifetime_favorites,
       subscriptions,
       lifetime_subscriptions,
-      preview_url
+      preview_url,
+      dailyPeak,
+      allTimePeak
     } = this.state;
     return (
       <Grid
@@ -98,6 +102,18 @@ class GameStats extends Component {
                 <TableCell>Current Players</TableCell>
                 <TableCell align="right">
                   {player_count.toLocaleString()}
+                </TableCell>
+              </TableRow>
+              <TableRow className={classes.row}>
+                <TableCell>All Time Peak</TableCell>
+                <TableCell align="right">
+                  {allTimePeak.toLocaleString()}
+                </TableCell>
+              </TableRow>
+              <TableRow className={classes.row}>
+                <TableCell>Daily Peak</TableCell>
+                <TableCell align="right">
+                  {dailyPeak.toLocaleString()}
                 </TableCell>
               </TableRow>
               <TableRow className={classes.row}>

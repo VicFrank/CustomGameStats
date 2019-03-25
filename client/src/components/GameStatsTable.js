@@ -56,18 +56,23 @@ const rows = [
     label: "Current Players"
   },
   {
+    id: "allTimePeak",
+    numeric: true,
+    disablePadding: false,
+    label: "All Time Peak"
+  },
+  {
+    id: "dailyPeak",
+    numeric: true,
+    disablePadding: false,
+    label: "Daily Peak"
+  },
+  {
     id: "subscriptions",
     numeric: true,
     disablePadding: false,
     label: "Subscribers"
   },
-  {
-    id: "views",
-    numeric: true,
-    disablePadding: false,
-    label: "Workshop Views"
-  },
-  { id: "favorites", numeric: true, disablePadding: false, label: "Favorites" },
   {
     id: "last_update",
     numeric: true,
@@ -283,13 +288,13 @@ class EnhancedTableBody extends React.PureComponent {
                   {game.player_count.toLocaleString()}
                 </TableCell>
                 <TableCell align="right">
+                  {game.allTimePeak.toLocaleString()}
+                </TableCell>
+                <TableCell align="right">
+                  {game.dailyPeak.toLocaleString()}
+                </TableCell>
+                <TableCell align="right">
                   {game.subscriptions.toLocaleString()}
-                </TableCell>
-                <TableCell align="right">
-                  {game.views.toLocaleString()}
-                </TableCell>
-                <TableCell align="right">
-                  {game.favorites.toLocaleString()}
                 </TableCell>
                 <TableCell align="right">
                   {new Date(game.last_update * 1000).toLocaleDateString()}

@@ -75,8 +75,6 @@ const GetStatsForGame = async gameid => {
       allTimePeak: allTimePeak
     };
 
-    console.log(stats);
-
     return stats;
   } catch (error) {
     console.log(error);

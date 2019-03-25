@@ -7,8 +7,7 @@ const GameStatsSchema = new Schema({
     required: true
   },
   gamename: {
-    type: String,
-    required: true
+    type: String
   },
   dailyPeak: {
     type: Schema.Types.ObjectId

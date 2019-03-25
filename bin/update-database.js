@@ -4,7 +4,12 @@ const fetch = require("node-fetch");
 const models = require("../models/game-stats");
 const mongoose = require("mongoose");
 
-const db = process.env.DATABASE_URL;
+let db;
+if (process.env.IS_PRODUCTION) {
+  db = process.env.DATABASE_URL;
+} else {
+  db = require("../config/keys").mongoURI;
+}
 
 mongoose
   .connect(db, { useNewUrlParser: true })
@@ -78,4 +83,6 @@ const DownloadPlayerCounts = async () => {
   });
 };
 
-DownloadPlayerCounts();
+(async function() {
+  await DownloadPlayerCounts();
+})();
