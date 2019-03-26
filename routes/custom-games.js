@@ -8,6 +8,33 @@ const models = require("../models/game-stats");
 
 let cache = apicache.middleware;
 
+const GetRecordsForGame = async gameid => {
+  let gameStats = await models.GameStats.findOne({ gameid: gameid })
+    .populate("allTimePeak")
+    .populate("dailyPeak");
+
+  if (!gameStats) {
+    return {
+      dailyPeak: -1,
+      allTimePeak: -1
+    };
+  }
+
+  if (!gameStats.allTimePeak) {
+    return {
+      dailyPeak: 0,
+      allTimePeak: 0
+    };
+  }
+
+  const dailyPeak = gameStats.dailyPeak.playercount;
+  const allTimePeak = gameStats.allTimePeak.playercount;
+  return {
+    dailyPeak: dailyPeak,
+    allTimePeak: allTimePeak
+  };
+};
+
 const GetStatsForGame = async gameid => {
   try {
     let player_count;
@@ -35,6 +62,18 @@ const GetStatsForGame = async gameid => {
 
     let allTimePeak = records.allTimePeak;
     let dailyPeak = records.dailyPeak;
+
+    // Potentially update peak stats
+    // By just adding this row to the database, it will automatically update
+    // the records on the backend
+    if (player_count > dailyPeak) {
+      const newRow = { gameid: gameid.toString(), playercount: player_count };
+      await models.PlayerCount.create(newRow);
+      dailyPeak = player_count;
+    }
+    if (player_count > allTimePeak) {
+      allTimePeak = player_count;
+    }
 
     // Get the other stats
     let preview_url;
@@ -84,35 +123,6 @@ const GetStatsForGame = async gameid => {
   }
 };
 
-const GetRecordsForGame = async gameid => {
-  let gameStats = await models.GameStats.findOne({ gameid: gameid })
-    .populate("allTimePeak")
-    .populate("dailyPeak");
-
-  if (!gameStats) {
-    return {
-      dailyPeak: -1,
-      allTimePeak: -1
-    };
-  }
-
-  if (!gameStats.allTimePeak) {
-    return {
-      dailyPeak: 0,
-      allTimePeak: 0
-    };
-  }
-
-  const dailyPeak = gameStats.dailyPeak.playercount;
-  const allTimePeak = gameStats.allTimePeak.playercount;
-  return {
-    dailyPeak: dailyPeak,
-    allTimePeak: allTimePeak
-  };
-};
-
-// I'd really like if this data would get cached somewhere else so it
-// wouldn't be duplicated by /GetGameStats
 router.get("/GetGameStats/:gameid", cache("5 minutes"), async function(
   req,
   res,
@@ -120,14 +130,27 @@ router.get("/GetGameStats/:gameid", cache("5 minutes"), async function(
 ) {
   try {
     const stats = await GetStatsForGame(req.params.gameid);
+    // TODO: update dailyPeak upon getting stats
     res.json(stats);
   } catch (error) {
     console.log(error);
   }
 });
 
+router.get("/GetPopularGames", cache("1 hour"), async function(req, res, next) {
+  try {
+    const GetPopularGamesRequest = await fetch(
+      "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?"
+    );
+    const PopularGamesJSON = await GetPopularGamesRequest.json();
+    res.json(PopularGamesJSON);
+  } catch (err) {
+    console.log(err);
+    return;
+  }
+});
+
 router.get("/GetGameStats", cache("5 minutes"), async function(req, res, next) {
-  // https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?
   try {
     const GetPopularGamesRequest = await fetch(
       "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?"

@@ -165,7 +165,54 @@ class EnhancedTable extends React.Component {
     rowsPerPage: 100
   };
 
+  getStatsForGame = async (gameid, rank) => {
+    try {
+      const statsRequest = await fetch(`/custom-games/GetGameStats/${gameid}`);
+      const stats = await statsRequest.json();
+      return {
+        ...stats,
+        rank
+      };
+    } catch (err) {
+      console.log(err);
+    }
+  };
+
   componentDidMount() {
+    // try {
+    //   const popularGamesRequest = await fetch("/custom-games/GetPopularGames");
+    //   const popularGamesJSON = await popularGamesRequest.json();
+    //   // Only get the top 100 custom games
+    //   const popularGames = popularGamesJSON.result.custom_games.slice(0, 100);
+
+    //   let promises = [];
+
+    //   for (let i = 0; i < popularGames.length; i++) {
+    //     const promise = async (gameid, rank) => {
+    //       try {
+    //         const statsRequest = await fetch(
+    //           `/custom-games/GetGameStats/${gameid}`
+    //         );
+    //         const stats = await statsRequest.json();
+    //         return {
+    //           ...stats,
+    //           rank
+    //         };
+    //       } catch (err) {
+    //         console.log(err);
+    //       }
+    //     };
+    //     promises.push(promise(popularGames[i].id, i + 1));
+    //   }
+
+    //   const results = await Promise.all(promises);
+    //   for (const stats of results) {
+    //     const newState = this.state.data.concat(stats);
+    //     this.setState({ data: newState });
+    //   }
+    // } catch (err) {
+    //   console.log(err);
+    // }
     fetch("/custom-games/GetGameStats")
       .then(res => res.json())
       .then(res => {

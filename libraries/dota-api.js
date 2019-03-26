@@ -39,7 +39,18 @@ const GetPublishedFileDetails = async gameid => {
       headers: { "Content-type": "application/x-www-form-urlencoded" }
     });
 
-    const resultJSON = await result.json();
+    let resultJSON;
+    try {
+      resultJSON = await result.json();
+    } catch (error) {
+      console.log(
+        `Error converting to json in GetPublishedFileDetails for ${gameid}`
+      );
+      console.log(result);
+      console.log(error);
+      return;
+    }
+
     const response = resultJSON.response;
 
     if (response.result && response.result == 1) {
