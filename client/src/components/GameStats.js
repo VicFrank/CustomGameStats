@@ -11,6 +11,10 @@ import Paper from "@material-ui/core/Paper";
 import TableRow from "@material-ui/core/TableRow";
 import Link from "@material-ui/core/Link";
 import Grid from "@material-ui/core/Grid";
+// var CanvasJSReact = require("../lib/canvasjs.react");
+// var CanvasJS = CanvasJSReact.CanvasJS;
+// var CanvasJSChart = CanvasJSReact.CanvasJSChart;
+import CanvasJSChart from "../lib/canvasjs.react";
 
 const styles = theme => ({
   root: {
@@ -26,6 +30,9 @@ const styles = theme => ({
   },
   table: {
     width: 400
+  },
+  graph: {
+    width: 1200
   },
   row: {
     "&:nth-of-type(odd)": {
@@ -48,7 +55,8 @@ class GameStats extends Component {
     title: "",
     views: 0,
     dailyPeak: 0,
-    allTimePeak: 0
+    allTimePeak: 0,
+    datapoints: []
   };
 
   componentDidMount() {
@@ -58,9 +66,35 @@ class GameStats extends Component {
       .then(res => res.json())
       .then(res => this.setState({ ...res }))
       .catch(err => console.log(err));
+
+    fetch(`/custom-games/GetPlayerCounts/${gameid}`)
+      .then(res => res.json())
+      .then(playerCounts => {
+        for (let data of playerCounts) {
+          const newState = this.state.datapoints.concat({
+            x: new Date(data.timestamp),
+            y: data.playercount
+          });
+          this.setState({ datapoints: newState });
+        }
+      })
+      .catch(err => console.log(err));
   }
 
   render() {
+    const options = {
+      theme: "light2",
+      axisY: {
+        title: "Players"
+      },
+      data: [
+        {
+          type: "line",
+          xValueFormatString: "DDDD hh:mm",
+          dataPoints: this.state.datapoints
+        }
+      ]
+    };
     const { classes } = this.props;
     const {
       title,
@@ -169,6 +203,9 @@ class GameStats extends Component {
             </TableBody>
           </Table>
         </Paper>
+        <div className={classes.graph}>
+          <CanvasJSChart options={options} onRef={ref => (this.chart = ref)} />
+        </div>
       </Grid>
     );
   }

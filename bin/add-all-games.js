@@ -5,7 +5,7 @@
 const fetch = require("node-fetch");
 const models = require("../models/game-stats");
 const mongoose = require("mongoose");
-const GetPublishedFileDetails = require("../libraries/dota-api");
+const GetPublishedFileDetails = require("../lib/dota-api");
 
 const db = require("../config/keys").mongoURI;
 

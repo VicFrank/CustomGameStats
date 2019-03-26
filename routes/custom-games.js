@@ -3,7 +3,7 @@ const router = express.Router();
 const fetch = require("node-fetch");
 const apicache = require("apicache");
 
-const GetPublishedFileDetails = require("../libraries/dota-api");
+const GetPublishedFileDetails = require("../lib/dota-api");
 const models = require("../models/game-stats");
 
 let cache = apicache.middleware;
@@ -96,6 +96,16 @@ const GetStatsForGame = async gameid => {
       lifetime_subscriptions = itemDetails.lifetime_subscriptions;
       lifetime_favorites = itemDetails.lifetime_favorited;
       views = itemDetails.views;
+    } else {
+      console.log("couldn't GetPublishedFileDetails, placing default values");
+      preview_url = "";
+      title = "Error";
+      last_update = 0;
+      subscriptions = 0;
+      favorites = 0;
+      lifetime_subscriptions = 0;
+      lifetime_favorites = 0;
+      views = 0;
     }
 
     stats = {
@@ -123,6 +133,37 @@ const GetStatsForGame = async gameid => {
   }
 };
 
+router.get("/GetPopularGames", cache("1 hour"), async function(req, res, next) {
+  try {
+    const GetPopularGamesRequest = await fetch(
+      "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?"
+    );
+    const PopularGamesJSON = await GetPopularGamesRequest.json();
+    res.json(PopularGamesJSON);
+  } catch (err) {
+    console.log(err);
+    return;
+  }
+});
+
+router.get("/GetPlayerCounts/:gameid", cache("1 hour"), function(
+  req,
+  res,
+  next
+) {
+  const gameid = req.params.gameid;
+  // 7 days in milliseconds
+  const numDays = 7;
+  const minTime = new Date(Date.now() - 86400 * 1000 * numDays);
+  models.PlayerCount.find({
+    gameid: gameid,
+    timestamp: { $gte: minTime }
+  })
+    .sort({ timestamp: 1 })
+    .then(timestamps => res.json(timestamps))
+    .catch(err => console.log(err));
+});
+
 router.get("/GetGameStats/:gameid", cache("5 minutes"), async function(
   req,
   res,
@@ -134,19 +175,6 @@ router.get("/GetGameStats/:gameid", cache("5 minutes"), async function(
     res.json(stats);
   } catch (error) {
     console.log(error);
-  }
-});
-
-router.get("/GetPopularGames", cache("1 hour"), async function(req, res, next) {
-  try {
-    const GetPopularGamesRequest = await fetch(
-      "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?"
-    );
-    const PopularGamesJSON = await GetPopularGamesRequest.json();
-    res.json(PopularGamesJSON);
-  } catch (err) {
-    console.log(err);
-    return;
   }
 });
 
