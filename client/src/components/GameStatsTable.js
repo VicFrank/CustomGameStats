@@ -303,50 +303,7 @@ class EnhancedTableBody extends React.PureComponent {
           .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
           .map(game => {
             return (
-              <TableRow
-                className={classes.row}
-                hover
-                tabIndex={-1}
-                key={game.id}
-              >
-                <TableCell>{game.rank}</TableCell>
-                <TableCell>
-                  <div className={classes.nameHolder}>
-                    <Avatar
-                      alt={game.title}
-                      src={game.preview_url}
-                      className={classes.avatar}
-                    />
-                    <Link component={RouterLink} to={`/games/${game.id}`}>
-                      {game.title}
-                    </Link>
-                  </div>
-                </TableCell>
-                <TableCell align="right">
-                  <Link
-                    href={`https://steamcommunity.com/sharedfiles/filedetails/?id=${
-                      game.id
-                    }`}
-                  >
-                    {game.id}
-                  </Link>
-                </TableCell>
-                <TableCell align="right">
-                  {game.player_count.toLocaleString()}
-                </TableCell>
-                <TableCell align="right">
-                  {game.allTimePeak.toLocaleString()}
-                </TableCell>
-                <TableCell align="right">
-                  {game.dailyPeak.toLocaleString()}
-                </TableCell>
-                <TableCell align="right">
-                  {game.subscriptions.toLocaleString()}
-                </TableCell>
-                <TableCell align="right">
-                  {new Date(game.last_update * 1000).toLocaleDateString()}
-                </TableCell>
-              </TableRow>
+              <EnhancedTableRow classes={classes} game={game} key={game.id} />
             );
           })}
         {emptyRows > 0 && (
@@ -355,6 +312,49 @@ class EnhancedTableBody extends React.PureComponent {
           </TableRow>
         )}
       </TableBody>
+    );
+  }
+}
+
+class EnhancedTableRow extends React.PureComponent {
+  render() {
+    const { game, classes } = this.props;
+    return (
+      <TableRow className={classes.row} hover tabIndex={-1}>
+        <TableCell>{game.rank}</TableCell>
+        <TableCell>
+          <div className={classes.nameHolder}>
+            <Avatar
+              alt={game.title}
+              src={game.preview_url}
+              className={classes.avatar}
+            />
+            <Link component={RouterLink} to={`/games/${game.id}`}>
+              {game.title}
+            </Link>
+          </div>
+        </TableCell>
+        <TableCell align="right">
+          <Link
+            href={`https://steamcommunity.com/sharedfiles/filedetails/?id=${
+              game.id
+            }`}
+          >
+            {game.id}
+          </Link>
+        </TableCell>
+        <TableCell align="right">
+          {game.player_count.toLocaleString()}
+        </TableCell>
+        <TableCell align="right">{game.allTimePeak.toLocaleString()}</TableCell>
+        <TableCell align="right">{game.dailyPeak.toLocaleString()}</TableCell>
+        <TableCell align="right">
+          {game.subscriptions.toLocaleString()}
+        </TableCell>
+        <TableCell align="right">
+          {new Date(game.last_update * 1000).toLocaleDateString()}
+        </TableCell>
+      </TableRow>
     );
   }
 }
