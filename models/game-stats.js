@@ -69,6 +69,19 @@ PlayerCountSchema.pre("save", async function(next) {
       gameStats.allTimePeak = this;
       gameStats.dailyPeak = this;
       changed = true;
+    } else if (!gameStats.dailyPeak) {
+      // if for some reason we have the alltimepeak, but not the dailypeak
+      // calculate the daily peak manually
+      console.log(`found allTimePeak but not dailyPeak for ${this.gameid}`);
+      const minTime = new Date(Date.now() - 86400 * 1000);
+      await this.model("PlayerCount")
+        .find({ gameid: this.gameid, timestamp: { $gte: minTime } })
+        .sort({ playercount: -1 })
+        .limit(1)
+        .then(newPeak => {
+          gameStats.dailyPeak = newPeak[0];
+        });
+      changed = true;
     } else {
       if (this.playercount > gameStats.allTimePeak.playercount) {
         gameStats.allTimePeak = this;

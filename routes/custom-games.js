@@ -13,14 +13,17 @@ const GetRecordsForGame = async gameid => {
     .populate("allTimePeak")
     .populate("dailyPeak");
 
-  if (!gameStats) {
+  // this game isn't being tracked (should add it)
+  if (gameStats == null) {
+    console.log(`${gameid} not in GameStats`);
     return {
       dailyPeak: -1,
       allTimePeak: -1
     };
   }
 
-  if (!gameStats.allTimePeak) {
+  // we haven't yet record stats for this game
+  if (gameStats.allTimePeak == undefined || gameStats.dailyPeak == undefined) {
     return {
       dailyPeak: 0,
       allTimePeak: 0
@@ -37,24 +40,25 @@ const GetRecordsForGame = async gameid => {
 
 const GetStatsForGame = async gameid => {
   try {
-    let player_count;
-    let spectator_count;
+    let player_count = -1;
+    let spectator_count = -1;
 
     // Get the player count
     const url = `https://www.dota2.com/webapi/ICustomGames/GetGamePlayerCounts/v0001/?custom_game_id=${gameid}`;
 
     const request = await fetch(url);
-    const game_stats = await request.json();
+    if (request.ok) {
+      const game_stats = await request.json();
 
-    const success = game_stats.success;
-    if (success === false || success === undefined) {
-      console.log(`Failed to get players for ${gameid}`);
-      // should fall back on cached value
-      player_count = -1;
-      spectator_count = -1;
+      const success = game_stats.success;
+      if (success === false || success === undefined) {
+        console.log(`Failed to get players for ${gameid}`);
+      } else {
+        player_count = game_stats.player_count;
+        spectator_count = game_stats.spectator_count;
+      }
     } else {
-      player_count = game_stats.player_count;
-      spectator_count = game_stats.spectator_count;
+      throw Error(`Request rejected with status ${request.status}`);
     }
 
     // Get the data from the database
@@ -138,8 +142,14 @@ router.get("/GetPopularGames", cache("1 hour"), async function(req, res, next) {
     const GetPopularGamesRequest = await fetch(
       "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?"
     );
-    const PopularGamesJSON = await GetPopularGamesRequest.json();
-    res.json(PopularGamesJSON);
+    if (GetPopularGamesRequest.ok) {
+      const PopularGamesJSON = await GetPopularGamesRequest.json();
+      res.json(PopularGamesJSON);
+    } else {
+      throw Error(
+        `Request rejected with status ${GetPopularGamesRequest.status}`
+      );
+    }
   } catch (err) {
     console.log(err);
     return;
@@ -164,6 +174,31 @@ router.get("/GetPlayerCounts/:gameid", cache("1 hour"), function(
     .catch(err => console.log(err));
 });
 
+router.get("/GetJoinableCustomLobbies/", cache("5 minutes"), async function(
+  req,
+  res,
+  next
+) {
+  try {
+    // https://www.dota2.com/webapi/ILobbies/GetJoinableCustomLobbies/v0001
+    // [
+    //   {
+    //   lobby_id: "26064242351321102",
+    //   custom_game_id: "1613886175",
+    //   member_count: 1,
+    //   leader_account_id: 878302771,
+    //   leader_name: "saurtis",
+    //   custom_map_name: "normal",
+    //   max_player_count: 8,
+    //   server_region: 3,
+    //   has_pass_key: false
+    //   }
+    // ]
+  } catch (error) {
+    console.log(error);
+  }
+});
+
 router.get("/GetGameStats/:gameid", cache("5 minutes"), async function(
   req,
   res,
@@ -179,10 +214,16 @@ router.get("/GetGameStats/:gameid", cache("5 minutes"), async function(
 });
 
 router.get("/GetGameStats", cache("5 minutes"), async function(req, res, next) {
+  console.log("GetGameStats");
   try {
     const GetPopularGamesRequest = await fetch(
       "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?"
     );
+    if (!GetPopularGamesRequest.ok) {
+      throw Error(
+        `Request rejected with status ${GetPopularGamesRequest.status}`
+      );
+    }
     const PopularGamesJSON = await GetPopularGamesRequest.json();
     // Only get the top 100 custom games
     const start = 0;

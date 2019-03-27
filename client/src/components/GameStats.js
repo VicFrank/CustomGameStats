@@ -90,7 +90,7 @@ class GameStats extends Component {
       data: [
         {
           type: "line",
-          xValueFormatString: "DDDD hh:mm",
+          xValueFormatString: "DDDD hh:mm tt",
           dataPoints: this.state.datapoints
         }
       ]
