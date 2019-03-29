@@ -13,7 +13,8 @@ const GetRecordsForGame = async gameid => {
     .populate("allTimePeak")
     .populate("dailyPeak");
 
-  // this game isn't being tracked (should add it)
+  // this game isn't being tracked, this could be because we haven't added it yet
+  // or because a game with this gameid doesn't exist
   if (gameStats == null) {
     console.log(`${gameid} not in GameStats`);
     return {
@@ -156,6 +157,20 @@ router.get("/GetPopularGames", cache("1 hour"), async function(req, res, next) {
   }
 });
 
+router.get("/GetAllGames", cache("1 hour"), async function(req, res, next) {
+  try {
+    const allGameStats = await models.GameStats.find({}).select({
+      gamename: 1,
+      gameid: 1,
+      _id: 0
+    });
+    res.json(allGameStats);
+  } catch (err) {
+    console.log(err);
+    return;
+  }
+});
+
 router.get("/GetPlayerCounts/:gameid", cache("1 hour"), function(
   req,
   res,
@@ -194,8 +209,8 @@ router.get("/GetJoinableCustomLobbies/", cache("5 minutes"), async function(
     //   has_pass_key: false
     //   }
     // ]
-  } catch (error) {
-    console.log(error);
+  } catch (err) {
+    console.log(err);
   }
 });
 
@@ -206,15 +221,13 @@ router.get("/GetGameStats/:gameid", cache("5 minutes"), async function(
 ) {
   try {
     const stats = await GetStatsForGame(req.params.gameid);
-    // TODO: update dailyPeak upon getting stats
     res.json(stats);
-  } catch (error) {
-    console.log(error);
+  } catch (err) {
+    console.log(err);
   }
 });
 
 router.get("/GetGameStats", cache("5 minutes"), async function(req, res, next) {
-  console.log("GetGameStats");
   try {
     const GetPopularGamesRequest = await fetch(
       "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?"

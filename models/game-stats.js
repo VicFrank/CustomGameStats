@@ -56,6 +56,7 @@ PlayerCountSchema.pre("save", async function(next) {
       .populate("dailyPeak");
 
     // don't update GameStats if we're not tracking this game
+    // or this is a bad gameid
     if (!gameStats) {
       console.log(`${this.gameid} is not being logged`);
       next();

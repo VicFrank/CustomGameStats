@@ -60,8 +60,16 @@ class GameStats extends Component {
   };
 
   componentDidMount() {
-    const gameid = this.props.match.params.id;
+    this.fetchData(this.props.match.params.id);
+  }
 
+  componentDidUpdate(prevProps) {
+    if (this.props.match.params.id !== prevProps.match.params.id) {
+      this.fetchData(this.props.match.params.id);
+    }
+  }
+
+  fetchData = gameid => {
     fetch(`/custom-games/GetGameStats/${gameid}`)
       .then(res => res.json())
       .then(res => this.setState({ ...res }))
@@ -70,16 +78,18 @@ class GameStats extends Component {
     fetch(`/custom-games/GetPlayerCounts/${gameid}`)
       .then(res => res.json())
       .then(playerCounts => {
+        let datapoints = [];
         for (let data of playerCounts) {
-          const newState = this.state.datapoints.concat({
+          datapoints.push({
             x: new Date(data.timestamp),
             y: data.playercount
           });
-          this.setState({ datapoints: newState });
         }
+        return datapoints;
       })
+      .then(datapoints => this.setState({ datapoints: datapoints }))
       .catch(err => console.log(err));
-  }
+  };
 
   render() {
     const options = {
@@ -127,6 +137,7 @@ class GameStats extends Component {
             className={classes.media}
             image={preview_url}
             title={title}
+            src="image"
           />
         </Paper>
         <Paper className={classes.table}>

@@ -1,9 +1,10 @@
 import React, { Component } from "react";
-import { Route } from "react-router-dom";
+import { Route, Switch } from "react-router-dom";
 
 import GameStatsTable from "./components/GameStatsTable";
 import GameStats from "./components/GameStats";
-import SearchAppBar from "./components/SearchAppBar";
+import NavBar from "./components/NavBar";
+import NoMatch from "./components/NoMatch";
 
 class App extends Component {
   state = { popular_games: [] };
@@ -11,9 +12,12 @@ class App extends Component {
   render() {
     return (
       <div className="App">
-        <SearchAppBar />
-        <Route exact path="/" component={GameStatsTable} />
-        <Route path="/games/:id" component={GameStats} />
+        <NavBar />
+        <Switch>
+          <Route exact path="/" component={GameStatsTable} />
+          <Route path="/games/:id" component={GameStats} />
+          <Route component={NoMatch} />
+        </Switch>
       </div>
     );
   }
