@@ -344,15 +344,21 @@ class EnhancedTableRow extends React.PureComponent {
           </Link>
         </TableCell>
         <TableCell align="right">
-          {game.player_count.toLocaleString()}
-        </TableCell>
-        <TableCell align="right">{game.allTimePeak.toLocaleString()}</TableCell>
-        <TableCell align="right">{game.dailyPeak.toLocaleString()}</TableCell>
-        <TableCell align="right">
-          {game.subscriptions.toLocaleString()}
+          {game.player_count ? game.player_count.toLocaleString() : "?"}
         </TableCell>
         <TableCell align="right">
-          {new Date(game.last_update * 1000).toLocaleDateString()}
+          {game.allTimePeak ? game.allTimePeak.toLocaleString() : "?"}
+        </TableCell>
+        <TableCell align="right">
+          {game.dailyPeak ? game.dailyPeak.toLocaleString() : "?"}
+        </TableCell>
+        <TableCell align="right">
+          {game.subscriptions ? game.subscriptions.toLocaleString() : "?"}
+        </TableCell>
+        <TableCell align="right">
+          {game.last_update
+            ? new Date(game.last_update * 1000).toLocaleDateString()
+            : "?"}
         </TableCell>
       </TableRow>
     );
