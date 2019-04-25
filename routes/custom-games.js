@@ -81,14 +81,14 @@ const GetStatsForGame = async gameid => {
     }
 
     // Get the other stats
-    let preview_url;
-    let title;
-    let last_update;
-    let subscriptions;
-    let favorites;
-    let lifetime_subscriptions;
-    let lifetime_favorites;
-    let views;
+    let preview_url = "";
+    let title = "Error";
+    let last_update = 0;
+    let subscriptions = 0;
+    let favorites = 0;
+    let lifetime_subscriptions = 0;
+    let lifetime_favorites = 0;
+    let views = 0;
 
     let itemDetails = await GetPublishedFileDetails(gameid);
 
@@ -103,14 +103,6 @@ const GetStatsForGame = async gameid => {
       views = itemDetails.views;
     } else {
       console.log("couldn't GetPublishedFileDetails, placing default values");
-      preview_url = "";
-      title = "Error";
-      last_update = 0;
-      subscriptions = 0;
-      favorites = 0;
-      lifetime_subscriptions = 0;
-      lifetime_favorites = 0;
-      views = 0;
     }
 
     stats = {
@@ -171,6 +163,44 @@ router.get("/GetAllGames", cache("1 hour"), async function(req, res, next) {
   }
 });
 
+router.get("/GetDailyPeaks/:gameid", cache("1 hour"), async function(
+  req,
+  res,
+  next
+) {
+  const gameid = req.params.gameid;
+  const dailyPeaks = new Map();
+  let cursor;
+
+  try {
+    cursor = await models.PlayerCount.find({ gameid: gameid }).cursor();
+  } catch (err) {
+    console.log(err);
+    return;
+  }
+
+  cursor.on("data", playerCount => {
+    const day = playerCount.timestamp.setHours(0, 0, 0, 0);
+    const playercount = playerCount.playercount;
+    if (!dailyPeaks.get(day)) dailyPeaks.set(day, playercount);
+    else dailyPeaks.set(day, Math.max(dailyPeaks.get(day), playercount));
+  });
+
+  cursor.on("close", function() {
+    const sortedPeaks = new Map([...dailyPeaks.entries()].sort());
+    result = [];
+
+    sortedPeaks.forEach((value, key) =>
+      result.push({
+        timestamp: key,
+        dailyPeak: value
+      })
+    );
+    res.json(result);
+  });
+});
+
+// Get all the recorded player counts in the past 7 days
 router.get("/GetPlayerCounts/:gameid", cache("1 hour"), function(
   req,
   res,

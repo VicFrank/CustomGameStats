@@ -11,10 +11,9 @@ import Paper from "@material-ui/core/Paper";
 import TableRow from "@material-ui/core/TableRow";
 import Link from "@material-ui/core/Link";
 import Grid from "@material-ui/core/Grid";
-// var CanvasJSReact = require("../lib/canvasjs.react");
-// var CanvasJS = CanvasJSReact.CanvasJS;
-// var CanvasJSChart = CanvasJSReact.CanvasJSChart;
-import CanvasJSChart from "../lib/canvasjs.react";
+
+// import TimeSeriesGraph from "./TimeSeriesGraph";
+import PlayerCountGraph from "./PlayerCountGraph";
 
 const styles = theme => ({
   root: {
@@ -56,7 +55,8 @@ class GameStats extends Component {
     views: 0,
     dailyPeak: 0,
     allTimePeak: 0,
-    datapoints: []
+    hourlyDataPoints: [],
+    dailyDataPoints: []
   };
 
   componentDidMount() {
@@ -78,21 +78,40 @@ class GameStats extends Component {
     fetch(`/custom-games/GetPlayerCounts/${gameid}`)
       .then(res => res.json())
       .then(playerCounts => {
-        let datapoints = [];
+        let hourlyDataPoints = [];
         for (let data of playerCounts) {
-          datapoints.push({
+          hourlyDataPoints.push({
             x: new Date(data.timestamp),
             y: data.playercount
           });
         }
-        return datapoints;
+        return hourlyDataPoints;
       })
-      .then(datapoints => this.setState({ datapoints: datapoints }))
+      .then(hourlyDataPoints =>
+        this.setState({ hourlyDataPoints: hourlyDataPoints })
+      )
+      .catch(err => console.log(err));
+
+    fetch(`/custom-games/GetDailyPeaks/${gameid}`)
+      .then(res => res.json())
+      .then(playerCounts => {
+        let dailyDataPoints = [];
+        for (let data of playerCounts) {
+          dailyDataPoints.push({
+            x: new Date(data.timestamp),
+            y: data.dailyPeak
+          });
+        }
+        return dailyDataPoints;
+      })
+      .then(dailyDataPoints =>
+        this.setState({ dailyDataPoints: dailyDataPoints })
+      )
       .catch(err => console.log(err));
   };
 
   render() {
-    const options = {
+    const hourlyData = {
       theme: "light2",
       axisY: {
         title: "Players"
@@ -101,7 +120,20 @@ class GameStats extends Component {
         {
           type: "line",
           xValueFormatString: "DDDD hh:mm tt",
-          dataPoints: this.state.datapoints
+          dataPoints: this.state.hourlyDataPoints
+        }
+      ]
+    };
+    const dailyData = {
+      theme: "light2",
+      axisY: {
+        title: "Players"
+      },
+      data: [
+        {
+          type: "line",
+          xValueFormatString: "DDDD",
+          dataPoints: this.state.dailyDataPoints
         }
       ]
     };
@@ -215,8 +247,15 @@ class GameStats extends Component {
           </Table>
         </Paper>
         <div className={classes.graph}>
-          <CanvasJSChart options={options} onRef={ref => (this.chart = ref)} />
+          <PlayerCountGraph
+            dailyData={dailyData}
+            hourlyData={hourlyData}
+            onRef={ref => (this.chart = ref)}
+          />
         </div>
+        {/* <div className={classes.graph}>
+          <TimeSeriesGraph data={this.state.datapoints} />
+        </div> */}
       </Grid>
     );
   }

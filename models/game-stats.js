@@ -25,6 +25,23 @@ GameStatsSchema.virtual("playerCounts", {
 GameStatsSchema.path("dailyPeak").ref("PlayerCount");
 GameStatsSchema.path("allTimePeak").ref("PlayerCount");
 
+const DailyRecordSchema = new Schema({
+  gameid: {
+    type: String,
+    required: true
+  },
+  timestamp: {
+    type: Date,
+    required: true
+  },
+  peakPlayers: {
+    type: Number,
+    required: true
+  }
+});
+
+const DailyRecord = mongoose.model("DailyRecord", DailyRecordSchema);
+
 // GameStats.find({gameid: gameid}).populate('playerCounts').exec(function(err, stats) {
 //   stats.playerCounts;
 // });
@@ -117,5 +134,6 @@ const PlayerCount = mongoose.model("PlayerCount", PlayerCountSchema);
 
 module.exports = {
   GameStats: GameStats,
-  PlayerCount: PlayerCount
+  PlayerCount: PlayerCount,
+  DailyRecord: DailyRecord
 };

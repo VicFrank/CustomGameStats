@@ -1,7 +1,6 @@
 #! /app/.heroku/node/bin/node
 
 // Populate GameStatsSchema with all the popular games, so we have a list of them
-
 const fetch = require("node-fetch");
 const models = require("../models/game-stats");
 const mongoose = require("mongoose");

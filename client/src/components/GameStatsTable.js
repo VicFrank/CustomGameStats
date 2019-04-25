@@ -5,7 +5,6 @@ import Table from "@material-ui/core/Table";
 import TableBody from "@material-ui/core/TableBody";
 import TableCell from "@material-ui/core/TableCell";
 import TableHead from "@material-ui/core/TableHead";
-import TablePagination from "@material-ui/core/TablePagination";
 import TableRow from "@material-ui/core/TableRow";
 import TableSortLabel from "@material-ui/core/TableSortLabel";
 import Paper from "@material-ui/core/Paper";
@@ -56,16 +55,16 @@ const rows = [
     label: "Current Players"
   },
   {
-    id: "allTimePeak",
-    numeric: true,
-    disablePadding: false,
-    label: "All Time Peak"
-  },
-  {
     id: "dailyPeak",
     numeric: true,
     disablePadding: false,
     label: "Daily Peak"
+  },
+  {
+    id: "allTimePeak",
+    numeric: true,
+    disablePadding: false,
+    label: "All Time Peak"
   },
   {
     id: "subscriptions",
@@ -274,21 +273,6 @@ class EnhancedTable extends React.Component {
             />
           </Table>
         </div>
-        <TablePagination
-          rowsPerPageOptions={[5, 10, 25]}
-          component="div"
-          count={data.length}
-          rowsPerPage={rowsPerPage}
-          page={page}
-          backIconButtonProps={{
-            "aria-label": "Previous Page"
-          }}
-          nextIconButtonProps={{
-            "aria-label": "Next Page"
-          }}
-          onChangePage={this.handleChangePage}
-          onChangeRowsPerPage={this.handleChangeRowsPerPage}
-        />
       </Paper>
     );
   }
@@ -344,13 +328,15 @@ class EnhancedTableRow extends React.PureComponent {
           </Link>
         </TableCell>
         <TableCell align="right">
-          {game.player_count ? game.player_count.toLocaleString() : "?"}
-        </TableCell>
-        <TableCell align="right">
-          {game.allTimePeak ? game.allTimePeak.toLocaleString() : "?"}
+          {game.player_count !== undefined
+            ? game.player_count.toLocaleString()
+            : "?"}
         </TableCell>
         <TableCell align="right">
           {game.dailyPeak ? game.dailyPeak.toLocaleString() : "?"}
+        </TableCell>
+        <TableCell align="right">
+          {game.allTimePeak ? game.allTimePeak.toLocaleString() : "?"}
         </TableCell>
         <TableCell align="right">
           {game.subscriptions ? game.subscriptions.toLocaleString() : "?"}
