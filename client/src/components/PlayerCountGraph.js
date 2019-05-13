@@ -1,25 +1,81 @@
-import React, { useState } from "react";
-import CanvasJSChart from "../lib/canvasjs.react";
-import Tabs from "@material-ui/core/Tabs";
-import Tab from "@material-ui/core/Tab";
+import React from "react";
+import Highcharts from "highcharts";
+import HighchartsReact from "highcharts-react-official";
 
 export default function PlayerCountGraph(props) {
-  const { dailyData, hourlyData, onRef } = props;
-  const [value, setValue] = useState(0);
+  const { data, title } = props;
 
-  const handleChange = (event, value) => {
-    console.log(value);
-    setValue(value);
+  const options = {
+    title: {
+      text: title
+    },
+    chart: {
+      zoomType: "x"
+    },
+    subtitle: {
+      text:
+        document.ontouchstart === undefined
+          ? "Click and drag in the plot area to zoom in"
+          : "Pinch the chart to zoom in"
+    },
+    xAxis: {
+      type: "datetime"
+    },
+    yAxis: {
+      title: {
+        text: "Players"
+      }
+    },
+    tooltip: {
+      xDateFormat: "%B %e, %H:%M",
+      shared: true
+    },
+    legend: {
+      enabled: false
+    },
+    plotOptions: {
+      area: {
+        fillColor: {
+          linearGradient: {
+            x1: 0,
+            y1: 0,
+            x2: 0,
+            y2: 1
+          },
+          stops: [
+            [0, Highcharts.getOptions().colors[0]],
+            [
+              1,
+              Highcharts.Color(Highcharts.getOptions().colors[0])
+                .setOpacity(0)
+                .get("rgba")
+            ]
+          ]
+        },
+        marker: {
+          radius: 2
+        },
+        lineWidth: 1,
+        states: {
+          hover: {
+            lineWidth: 1
+          }
+        },
+        threshold: null
+      }
+    },
+    series: [
+      {
+        type: "area",
+        name: "Players",
+        data: data
+      }
+    ]
   };
 
   return (
     <div>
-      <Tabs value={value} onChange={handleChange}>
-        <Tab label="Hourly" />
-        <Tab label="Daily" />
-      </Tabs>
-      {value === 0 && <CanvasJSChart options={hourlyData} onRef={onRef} />}
-      {value === 1 && <CanvasJSChart options={dailyData} onRef={onRef} />}
+      <HighchartsReact highcharts={Highcharts} options={options} />
     </div>
   );
 }

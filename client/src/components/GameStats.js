@@ -12,8 +12,7 @@ import TableRow from "@material-ui/core/TableRow";
 import Link from "@material-ui/core/Link";
 import Grid from "@material-ui/core/Grid";
 
-// import TimeSeriesGraph from "./TimeSeriesGraph";
-import PlayerCountGraph from "./PlayerCountGraph";
+import PlayerCountGraphSelector from "./PlayerCountGraphSelector";
 
 const styles = theme => ({
   root: {
@@ -81,7 +80,7 @@ class GameStats extends Component {
         let hourlyDataPoints = [];
         for (let data of playerCounts) {
           hourlyDataPoints.push({
-            x: new Date(data.timestamp),
+            x: Date.parse(data.timestamp),
             y: data.playercount
           });
         }
@@ -98,10 +97,14 @@ class GameStats extends Component {
         let dailyDataPoints = [];
         for (let data of playerCounts) {
           dailyDataPoints.push({
-            x: new Date(data.timestamp),
+            x: new Date(data.timestamp).getTime(),
             y: data.dailyPeak
           });
         }
+        // discard the first and last data points, since they don't reflect
+        // the daily peak
+        dailyDataPoints.pop();
+        dailyDataPoints.shift();
         return dailyDataPoints;
       })
       .then(dailyDataPoints =>
@@ -111,32 +114,6 @@ class GameStats extends Component {
   };
 
   render() {
-    const hourlyData = {
-      theme: "light2",
-      axisY: {
-        title: "Players"
-      },
-      data: [
-        {
-          type: "line",
-          xValueFormatString: "DDDD hh:mm tt",
-          dataPoints: this.state.hourlyDataPoints
-        }
-      ]
-    };
-    const dailyData = {
-      theme: "light2",
-      axisY: {
-        title: "Players"
-      },
-      data: [
-        {
-          type: "line",
-          xValueFormatString: "DDDD",
-          dataPoints: this.state.dailyDataPoints
-        }
-      ]
-    };
     const { classes } = this.props;
     const {
       title,
@@ -247,15 +224,11 @@ class GameStats extends Component {
           </Table>
         </Paper>
         <div className={classes.graph}>
-          <PlayerCountGraph
-            dailyData={dailyData}
-            hourlyData={hourlyData}
-            onRef={ref => (this.chart = ref)}
+          <PlayerCountGraphSelector
+            dailyData={this.state.dailyDataPoints}
+            hourlyData={this.state.hourlyDataPoints}
           />
         </div>
-        {/* <div className={classes.graph}>
-          <TimeSeriesGraph data={this.state.datapoints} />
-        </div> */}
       </Grid>
     );
   }
