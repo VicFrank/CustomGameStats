@@ -132,7 +132,7 @@ const styles = theme => ({
     padding: "1rem"
   },
   table: {
-    maxWidth: 1600,
+    maxWidth: 900,
     margin: "auto"
   },
   tableWrapper: {
