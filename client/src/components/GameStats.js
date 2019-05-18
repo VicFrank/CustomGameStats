@@ -16,21 +16,22 @@ import PlayerCountGraphSelector from "./PlayerCountGraphSelector";
 
 const styles = theme => ({
   root: {
-    marginTop: "1.5rem"
+    marginTop: "1.5rem",
+    maxWidth: 1000,
+    margin: "auto"
   },
   media: {
     height: 475
   },
   leftInfo: {
     width: 600,
-    height: 528,
-    marginRight: 20
+    height: 528
   },
   table: {
     width: 400
   },
-  graph: {
-    width: 1200
+  title: {
+    justifyContent: "center"
   },
   row: {
     "&:nth-of-type(odd)": {
@@ -139,8 +140,8 @@ class GameStats extends Component {
         alignItems="center"
       >
         <Paper className={classes.leftInfo}>
-          <ListItem>
-            <Typography variant="h5">{title}</Typography>
+          <ListItem className={classes.title}>
+            <Typography variant="title">{title}</Typography>
           </ListItem>
           <CardMedia
             className={classes.media}
@@ -223,12 +224,12 @@ class GameStats extends Component {
             </TableBody>
           </Table>
         </Paper>
-        <div className={classes.graph}>
+        <Grid item xs={12}>
           <PlayerCountGraphSelector
             dailyData={this.state.dailyDataPoints}
             hourlyData={this.state.hourlyDataPoints}
           />
-        </div>
+        </Grid>
       </Grid>
     );
   }

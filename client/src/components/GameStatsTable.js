@@ -12,6 +12,8 @@ import Tooltip from "@material-ui/core/Tooltip";
 import Avatar from "@material-ui/core/Avatar";
 import { Link as RouterLink } from "react-router-dom";
 import Link from "@material-ui/core/Link";
+import moment from "moment";
+import withSizes from "react-sizes";
 
 function desc(a, b, orderBy) {
   if (b[orderBy] < a[orderBy]) {
@@ -40,45 +42,40 @@ function getSorting(order, orderBy) {
 }
 
 const rows = [
-  { id: "rank", numeric: false, disablePadding: false, label: "Rank" },
-  { id: "title", numeric: false, disablePadding: false, label: "Game" },
-  {
-    id: "id",
-    numeric: true,
-    disablePadding: false,
-    label: "Workshop Link"
-  },
+  { id: "rank", numeric: false, label: "Rank", showOnMobile: true },
+  { id: "title", numeric: false, label: "Game", showOnMobile: true },
   {
     id: "player_count",
     numeric: true,
-    disablePadding: false,
-    label: "Current Players"
+    label: "Current Players",
+    showOnMobile: true
   },
   {
     id: "dailyPeak",
     numeric: true,
-    disablePadding: false,
     label: "Daily Peak"
   },
   {
     id: "allTimePeak",
     numeric: true,
-    disablePadding: false,
     label: "All Time Peak"
   },
   {
     id: "subscriptions",
     numeric: true,
-    disablePadding: false,
     label: "Subscribers"
   },
   {
     id: "last_update",
     numeric: true,
-    disablePadding: false,
-    label: "Last Update"
+    label: "Last Update",
+    showOnMobile: true
   }
 ];
+
+const mapSizesToProps = ({ width }) => ({
+  isMobile: width < 600
+});
 
 class EnhancedTableHead extends React.Component {
   createSortHandler = property => event => {
@@ -86,34 +83,35 @@ class EnhancedTableHead extends React.Component {
   };
 
   render() {
-    const { order, orderBy } = this.props;
+    const { order, orderBy, classes, isMobile } = this.props;
 
     return (
       <TableHead>
         <TableRow>
           {rows.map(
-            row => (
-              <TableCell
-                key={row.id}
-                align={row.numeric ? "right" : "left"}
-                padding={row.disablePadding ? "none" : "default"}
-                sortDirection={orderBy === row.id ? order : false}
-              >
-                <Tooltip
-                  title="Sort"
-                  placement={row.numeric ? "bottom-end" : "bottom-start"}
-                  enterDelay={300}
+            row =>
+              (!isMobile || row.showOnMobile) && (
+                <TableCell
+                  key={row.id}
+                  className={classes.tableCell}
+                  align={row.numeric ? "right" : "left"}
+                  sortDirection={orderBy === row.id ? order : false}
                 >
-                  <TableSortLabel
-                    active={orderBy === row.id}
-                    direction={order}
-                    onClick={this.createSortHandler(row.id)}
+                  <Tooltip
+                    title="Sort"
+                    placement={row.numeric ? "bottom-end" : "bottom-start"}
+                    enterDelay={300}
                   >
-                    {row.label}
-                  </TableSortLabel>
-                </Tooltip>
-              </TableCell>
-            ),
+                    <TableSortLabel
+                      active={orderBy === row.id}
+                      direction={order}
+                      onClick={this.createSortHandler(row.id)}
+                    >
+                      {row.label}
+                    </TableSortLabel>
+                  </Tooltip>
+                </TableCell>
+              ),
             this
           )}
         </TableRow>
@@ -130,11 +128,10 @@ EnhancedTableHead.propTypes = {
 
 const styles = theme => ({
   root: {
-    width: "100%",
-    marginTop: theme.spacing.unit * 3
+    marginTop: theme.spacing.unit * 3,
+    padding: "1rem"
   },
   table: {
-    minWidth: 1020,
     maxWidth: 1600,
     margin: "auto"
   },
@@ -152,6 +149,10 @@ const styles = theme => ({
   nameHolder: {
     display: "flex",
     alignItems: "center"
+  },
+  tableCell: {
+    paddingRight: 4,
+    paddingLeft: 5
   }
 });
 
@@ -216,7 +217,7 @@ class EnhancedTable extends React.Component {
   };
 
   render() {
-    const { classes } = this.props;
+    const { classes, isMobile } = this.props;
     const { data, order, orderBy, rowsPerPage, page } = this.state;
     const emptyRows =
       rowsPerPage - Math.min(rowsPerPage, data.length - page * rowsPerPage);
@@ -226,6 +227,8 @@ class EnhancedTable extends React.Component {
         <div className={classes.tableWrapper}>
           <Table className={classes.table} aria-labelledby="tableTitle">
             <EnhancedTableHead
+              classes={classes}
+              isMobile={isMobile}
               order={order}
               orderBy={orderBy}
               onRequestSort={this.handleRequestSort}
@@ -233,6 +236,7 @@ class EnhancedTable extends React.Component {
             <EnhancedTableBody
               data={data}
               classes={classes}
+              isMobile={isMobile}
               emptyRows={emptyRows}
               rowsPerPage={rowsPerPage}
               page={page}
@@ -246,14 +250,26 @@ class EnhancedTable extends React.Component {
 
 class EnhancedTableBody extends React.PureComponent {
   render() {
-    const { data, classes, emptyRows, rowsPerPage, page } = this.props;
+    const {
+      data,
+      classes,
+      emptyRows,
+      rowsPerPage,
+      page,
+      isMobile
+    } = this.props;
     return (
       <TableBody>
         {data
           .slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage)
           .map(game => {
             return (
-              <EnhancedTableRow classes={classes} game={game} key={game.id} />
+              <EnhancedTableRow
+                classes={classes}
+                isMobile={isMobile}
+                game={game}
+                key={game.id}
+              />
             );
           })}
         {emptyRows > 0 && (
@@ -268,49 +284,46 @@ class EnhancedTableBody extends React.PureComponent {
 
 class EnhancedTableRow extends React.PureComponent {
   render() {
-    const { game, classes } = this.props;
+    const { game, classes, isMobile } = this.props;
     return (
       <TableRow className={classes.row} hover tabIndex={-1}>
-        <TableCell>{game.rank}</TableCell>
-        <TableCell>
-          <div className={classes.nameHolder}>
-            <Avatar
-              alt={game.title}
-              src={game.preview_url}
-              className={classes.avatar}
-            />
-            <Link component={RouterLink} to={`/games/${game.id}`}>
+        <TableCell className={classes.tableCell}>{game.rank}</TableCell>
+        <TableCell className={classes.tableCell}>
+          <Link component={RouterLink} to={`/games/${game.id}`}>
+            <div className={classes.nameHolder}>
+              {!isMobile && (
+                <Avatar
+                  alt={game.title}
+                  src={game.preview_url}
+                  className={classes.avatar}
+                />
+              )}
               {game.title}
-            </Link>
-          </div>
-        </TableCell>
-        <TableCell align="right">
-          <Link
-            href={`https://steamcommunity.com/sharedfiles/filedetails/?id=${
-              game.id
-            }`}
-          >
-            {game.id}
+            </div>
           </Link>
         </TableCell>
-        <TableCell align="right">
+        <TableCell className={classes.tableCell} align="right">
           {game.player_count !== undefined
             ? game.player_count.toLocaleString()
             : "?"}
         </TableCell>
-        <TableCell align="right">
-          {game.dailyPeak ? game.dailyPeak.toLocaleString() : "?"}
-        </TableCell>
-        <TableCell align="right">
-          {game.allTimePeak ? game.allTimePeak.toLocaleString() : "?"}
-        </TableCell>
-        <TableCell align="right">
-          {game.subscriptions ? game.subscriptions.toLocaleString() : "?"}
-        </TableCell>
-        <TableCell align="right">
-          {game.last_update
-            ? new Date(game.last_update * 1000).toLocaleDateString()
-            : "?"}
+        {!isMobile && (
+          <TableCell className={classes.tableCell} align="right">
+            {game.dailyPeak ? game.dailyPeak.toLocaleString() : "?"}
+          </TableCell>
+        )}
+        {!isMobile && (
+          <TableCell className={classes.tableCell} align="right">
+            {game.allTimePeak ? game.allTimePeak.toLocaleString() : "?"}
+          </TableCell>
+        )}
+        {!isMobile && (
+          <TableCell className={classes.tableCell} align="right">
+            {game.subscriptions ? game.subscriptions.toLocaleString() : "?"}
+          </TableCell>
+        )}
+        <TableCell className={classes.tableCell} align="right">
+          {game.last_update ? moment(game.last_update * 1000).fromNow() : "?"}
         </TableCell>
       </TableRow>
     );
@@ -321,4 +334,4 @@ EnhancedTable.propTypes = {
   classes: PropTypes.object.isRequired
 };
 
-export default withStyles(styles)(EnhancedTable);
+export default withSizes(mapSizesToProps)(withStyles(styles)(EnhancedTable));

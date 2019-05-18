@@ -5,6 +5,8 @@ import Toolbar from "@material-ui/core/Toolbar";
 import Typography from "@material-ui/core/Typography";
 import { withStyles } from "@material-ui/core/styles";
 import { NavLink } from "react-router-dom";
+import SvgIcon from "@material-ui/core/SvgIcon";
+
 import SearchBar from "./SearchBar";
 
 const styles = theme => ({
@@ -24,11 +26,25 @@ const styles = theme => ({
       display: "block"
     }
   },
+  icon: {
+    display: "none",
+    [theme.breakpoints.down("xs")]: {
+      display: "block"
+    }
+  },
   inputRoot: {
     color: "inherit",
     width: "100%"
   }
 });
+
+function HomeIcon(props) {
+  return (
+    <SvgIcon {...props}>
+      <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+    </SvgIcon>
+  );
+}
 
 class NavBar extends React.Component {
   onSearchBarChange = event => {
@@ -58,6 +74,7 @@ class NavBar extends React.Component {
               >
                 Custom Game Stats
               </Typography>
+              <HomeIcon className={classes.icon} />
             </NavLink>
             <div className={classes.grow} />
             <SearchBar />

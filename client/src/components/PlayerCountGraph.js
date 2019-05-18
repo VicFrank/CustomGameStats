@@ -23,7 +23,7 @@ export default function PlayerCountGraph(props) {
     },
     yAxis: {
       title: {
-        text: "Players"
+        text: undefined
       }
     },
     tooltip: {
@@ -74,8 +74,8 @@ export default function PlayerCountGraph(props) {
   };
 
   return (
-    <div>
+    <>
       <HighchartsReact highcharts={Highcharts} options={options} />
-    </div>
+    </>
   );
 }

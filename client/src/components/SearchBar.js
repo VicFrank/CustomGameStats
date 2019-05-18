@@ -162,7 +162,7 @@ class SearchBar extends React.Component {
       <div className={classes.root}>
         <Downshift
           onChange={this.handleChange}
-          itemToString={gameData => gameData["gamename"]}
+          itemToString={gameData => (gameData ? gameData["gamename"] : "")}
           id="downshift-popper"
         >
           {({
