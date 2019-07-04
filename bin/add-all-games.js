@@ -42,6 +42,8 @@ const AddAllGames = async () => {
         }
       );
     }
+
+    process.exit();
   } catch (error) {
     console.log(error);
   }

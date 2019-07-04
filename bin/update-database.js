@@ -19,7 +19,9 @@ mongoose
 // A list of games that we should always record stats for, regardless of their appearance on the top 100
 const whitelist = [
   302491959, // battleships
-  1166137767 // the frostivus festival
+  1166137767, // the frostivus festival
+  1759829094, // Courier TD
+  1757281740 // Castle Fight
 ];
 
 const GetPlayerCounts = async gameid => {

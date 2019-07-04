@@ -4228,7 +4228,7 @@ handle-thing@^2.0.0:
   resolved "https://registry.yarnpkg.com/handle-thing/-/handle-thing-2.0.0.tgz#0e039695ff50c93fc288557d696f3c1dc6776754"
   integrity sha512-d4sze1JNC454Wdo2fkuyzCr6aHcbL6PGGuFAz0Li/NcOm1tCHGnWDRmJP85dh9IhQErTc2svWFEX5xHIOo//kQ==
 
-handlebars@^4.0.3:
+handlebars@^4.1.2:
   version "4.1.1"
   resolved "https://registry.yarnpkg.com/handlebars/-/handlebars-4.1.1.tgz#6e4e41c18ebe7719ae4d38e5aca3d32fa3dd23d3"
   integrity sha512-3Zhi6C0euYZL5sM0Zcy7lInLXKQ+YLcF/olbN010mzGQ4XVm50JeyBnMqofHh696GrciGruC7kCcApPDJvVgwA==
@@ -5135,7 +5135,7 @@ istanbul-api@^1.3.1:
     istanbul-lib-report "^1.1.5"
     istanbul-lib-source-maps "^1.2.6"
     istanbul-reports "^1.5.1"
-    js-yaml "^3.7.0"
+    js-yaml "^3.13.1"
     mkdirp "^0.5.1"
     once "^1.4.0"
 
