@@ -64,7 +64,8 @@ const styles = theme => ({
   },
   tableCell: {
     paddingRight: 4,
-    paddingLeft: 5
+    paddingLeft: 5,
+    maxWidth: 300
   }
 });
 
