@@ -19,7 +19,7 @@ const GetRecordsForGame = async gameid => {
     console.log(`${gameid} not in GameStats`);
     return {
       dailyPeak: -1,
-      allTimePeak: -1
+      allTimePeak: -1,
     };
   }
 
@@ -27,7 +27,7 @@ const GetRecordsForGame = async gameid => {
   if (gameStats.allTimePeak == undefined || gameStats.dailyPeak == undefined) {
     return {
       dailyPeak: 0,
-      allTimePeak: 0
+      allTimePeak: 0,
     };
   }
 
@@ -35,7 +35,7 @@ const GetRecordsForGame = async gameid => {
   const allTimePeak = gameStats.allTimePeak.playercount;
   return {
     dailyPeak: dailyPeak,
-    allTimePeak: allTimePeak
+    allTimePeak: allTimePeak,
   };
 };
 
@@ -102,7 +102,11 @@ const GetStatsForGame = async gameid => {
       lifetime_favorites = itemDetails.lifetime_favorited;
       views = itemDetails.views;
     } else {
-      console.log("couldn't GetPublishedFileDetails, placing default values");
+      console.log(
+        "couldn't GetPublishedFileDetails, falling back to database values"
+      );
+      const gameStats = await models.GameStats.findOne({ gameid: gameid });
+      title = gameStats.gamename;
     }
 
     stats = {
@@ -118,14 +122,14 @@ const GetStatsForGame = async gameid => {
       lifetime_favorites: lifetime_favorites,
       views: views,
       dailyPeak: dailyPeak,
-      allTimePeak: allTimePeak
+      allTimePeak: allTimePeak,
     };
 
     return stats;
   } catch (error) {
     console.log(error);
     return {
-      id: gameid
+      id: gameid,
     };
   }
 };
@@ -154,7 +158,7 @@ router.get("/GetAllGames", cache("1 hour"), async function(req, res, next) {
     const allGameStats = await models.GameStats.find({}).select({
       gamename: 1,
       gameid: 1,
-      _id: 0
+      _id: 0,
     });
     res.json(allGameStats);
   } catch (err) {
@@ -193,7 +197,7 @@ router.get("/GetDailyPeaks/:gameid", cache("1 hour"), async function(
     sortedPeaks.forEach((value, key) =>
       result.push({
         timestamp: key,
-        dailyPeak: value
+        dailyPeak: value,
       })
     );
     res.json(result);
@@ -212,7 +216,7 @@ router.get("/GetPlayerCounts/:gameid", cache("1 hour"), function(
   const minTime = new Date(Date.now() - 86400 * 1000 * numDays);
   models.PlayerCount.find({
     gameid: gameid,
-    timestamp: { $gte: minTime }
+    timestamp: { $gte: minTime },
   })
     .sort({ timestamp: 1 })
     .then(timestamps => res.json(timestamps))

@@ -4,6 +4,8 @@
 const fetch = require("node-fetch");
 const models = require("../models/game-stats");
 const mongoose = require("mongoose");
+const sleep = require("util").promisify(setTimeout);
+
 const GetPublishedFileDetails = require("../lib/dota-api");
 
 const db = require("../config/keys").mongoURI;
@@ -25,22 +27,22 @@ const AddAllGames = async () => {
     for (let gameData of popularGames) {
       const gameid = gameData.id;
       const itemDetails = await GetPublishedFileDetails(gameid);
-      let title = "";
+
+      await sleep(1000);
 
       if (itemDetails != null) {
-        title = itemDetails.title;
+        const title = itemDetails.title;
+        models.GameStats.findOneAndUpdate(
+          { gameid: gameid },
+          { gameid: gameid, gamename: title },
+          { upsert: true },
+          (err, doc) => {
+            if (err) console.log(err);
+            count++;
+            console.log(`${count} added ${title}`);
+          }
+        );
       }
-
-      models.GameStats.findOneAndUpdate(
-        { gameid: gameid },
-        { gameid: gameid, gamename: title },
-        { upsert: true },
-        (err, doc) => {
-          if (err) console.log(err);
-          count++;
-          console.log(`${count} added ${title}`);
-        }
-      );
     }
 
     process.exit();
