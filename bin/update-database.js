@@ -21,7 +21,8 @@ const whitelist = [
   302491959, // battleships
   1166137767, // the frostivus festival
   1759829094, // Courier TD
-  1757281740 // Castle Fight
+  1757281740, // Castle Fight
+  2077900442 // Path of Guardians
 ];
 
 const GetPlayerCounts = async gameid => {
