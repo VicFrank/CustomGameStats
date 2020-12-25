@@ -11,14 +11,14 @@
     "heroku-postbuild": "cd client && npm install && npm run build"
   },
   "dependencies": {
-    "apicache": "^1.4.0",
-    "concurrently": "^4.1.0",
+    "apicache": "^1.5.3",
+    "concurrently": "^4.1.2",
     "debug": "~2.6.9",
     "express": "~4.16.0",
-    "mongoose": "^5.4.19",
-    "morgan": "^1.9.1",
-    "node-fetch": "^2.3.0",
-    "nodemon": "^1.18.10",
-    "npm": "^6.9.0"
+    "mongoose": "^5.11.8",
+    "morgan": "^1.10.0",
+    "node-fetch": "^2.6.1",
+    "nodemon": "^1.19.4",
+    "npm": "^6.14.10"
   }
 }
