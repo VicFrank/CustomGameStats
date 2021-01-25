@@ -196,7 +196,7 @@ router.get(
     let allGames;
     try {
       const request = await fetch(
-        "http://localhost:4000/custom-games/GetAllGames"
+        "https://www.customgamestats.com/custom-games/GetAllGames"
       );
       if (!request.ok) {
         throw Error(`Request rejected with status ${request.status}`);
