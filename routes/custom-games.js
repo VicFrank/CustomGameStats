@@ -4,11 +4,13 @@ const fetch = require("node-fetch");
 const apicache = require("apicache");
 
 const GetPublishedFileDetails = require("../lib/dota-api");
+const add = require("../lib/bignumbers");
+const getRegionName = require("../lib/dota-server-regions");
 const models = require("../models/game-stats");
 
 let cache = apicache.middleware;
 
-const GetRecordsForGame = async gameid => {
+const GetRecordsForGame = async (gameid) => {
   let gameStats = await models.GameStats.findOne({ gameid: gameid })
     .populate("allTimePeak")
     .populate("dailyPeak");
@@ -39,7 +41,7 @@ const GetRecordsForGame = async gameid => {
   };
 };
 
-const GetStatsForGame = async gameid => {
+const GetStatsForGame = async (gameid) => {
   try {
     let player_count = -1;
     let spectator_count = -1;
@@ -134,26 +136,30 @@ const GetStatsForGame = async gameid => {
   }
 };
 
-router.get("/GetPopularGames", cache("1 hour"), async function(req, res, next) {
-  try {
-    const GetPopularGamesRequest = await fetch(
-      "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?"
-    );
-    if (GetPopularGamesRequest.ok) {
-      const PopularGamesJSON = await GetPopularGamesRequest.json();
-      res.json(PopularGamesJSON);
-    } else {
-      throw Error(
-        `Request rejected with status ${GetPopularGamesRequest.status}`
+router.get(
+  "/GetPopularGames",
+  cache("1 hour"),
+  async function (req, res, next) {
+    try {
+      const GetPopularGamesRequest = await fetch(
+        "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?"
       );
+      if (GetPopularGamesRequest.ok) {
+        const PopularGamesJSON = await GetPopularGamesRequest.json();
+        res.json(PopularGamesJSON);
+      } else {
+        throw Error(
+          `Request rejected with status ${GetPopularGamesRequest.status}`
+        );
+      }
+    } catch (err) {
+      console.log(err);
+      return;
     }
-  } catch (err) {
-    console.log(err);
-    return;
   }
-});
+);
 
-router.get("/GetAllGames", cache("1 hour"), async function(req, res, next) {
+router.get("/GetAllGames", cache("1 hour"), async function (req, res, next) {
   try {
     const allGameStats = await models.GameStats.find({}).select({
       gamename: 1,
@@ -167,135 +173,183 @@ router.get("/GetAllGames", cache("1 hour"), async function(req, res, next) {
   }
 });
 
-router.get("/GetDailyPeaks/:gameid", cache("1 hour"), async function(
-  req,
-  res,
-  next
-) {
-  const gameid = req.params.gameid;
-  const dailyPeaks = new Map();
-  let cursor;
+router.get(
+  "/GetAllLobbies",
+  cache("1 minute"),
+  async function (req, res, next) {
+    let lobbies;
+    let parsedLobbies = [];
+    try {
+      const request = await fetch(
+        "https://www.dota2.com/webapi/ILobbies/GetJoinableCustomLobbies/v0001"
+      );
+      if (!request.ok) {
+        throw Error(`Request rejected with status ${request.status}`);
+      }
+      const parsedJSON = await request.json();
+      lobbies = parsedJSON.lobbies;
+    } catch (err) {
+      console.log(err);
+      return;
+    }
 
-  try {
-    cursor = await models.PlayerCount.find({ gameid: gameid }).cursor();
-  } catch (err) {
-    console.log(err);
-    return;
+    let allGames;
+    try {
+      const request = await fetch(
+        "http://localhost:4000/custom-games/GetAllGames"
+      );
+      if (!request.ok) {
+        throw Error(`Request rejected with status ${request.status}`);
+      }
+      const parsedJSON = await request.json();
+      allGames = parsedJSON;
+    } catch (err) {
+      console.log(err);
+      return;
+    }
+
+    let titleMap = {};
+    for (game of allGames) {
+      const { gameid, gamename } = game;
+      titleMap[gameid] = gamename;
+    }
+
+    for (lobby of lobbies) {
+      const {
+        custom_game_id,
+        leader_account_id,
+        max_player_count,
+        server_region,
+      } = lobby;
+
+      let game_name = titleMap[custom_game_id];
+      if (!game_name) game_name = "???";
+
+      const steamID = add("76561197960265728", leader_account_id.toString()); // convert from steamID3 to steamID64
+      const maxPlayers = max_player_count > 100 ? "?" : max_player_count;
+      const server = getRegionName(server_region);
+
+      parsedLobbies.push({
+        ...lobby,
+        game_name,
+        leader_account_id: steamID,
+        max_player_count: maxPlayers,
+        server,
+      });
+    }
+
+    res.json(parsedLobbies);
   }
+);
 
-  cursor.on("data", playerCount => {
-    const day = playerCount.timestamp.setHours(0, 0, 0, 0);
-    const playercount = playerCount.playercount;
-    if (!dailyPeaks.get(day)) dailyPeaks.set(day, playercount);
-    else dailyPeaks.set(day, Math.max(dailyPeaks.get(day), playercount));
-  });
+router.get(
+  "/GetDailyPeaks/:gameid",
+  cache("1 hour"),
+  async function (req, res, next) {
+    const gameid = req.params.gameid;
+    const dailyPeaks = new Map();
+    let cursor;
 
-  cursor.on("close", function() {
-    const sortedPeaks = new Map([...dailyPeaks.entries()].sort());
-    result = [];
+    try {
+      cursor = await models.PlayerCount.find({ gameid: gameid }).cursor();
+    } catch (err) {
+      console.log(err);
+      return;
+    }
 
-    sortedPeaks.forEach((value, key) =>
-      result.push({
-        timestamp: key,
-        dailyPeak: value,
-      })
-    );
-    res.json(result);
-  });
-});
+    cursor.on("data", (playerCount) => {
+      const day = playerCount.timestamp.setHours(0, 0, 0, 0);
+      const playercount = playerCount.playercount;
+      if (!dailyPeaks.get(day)) dailyPeaks.set(day, playercount);
+      else dailyPeaks.set(day, Math.max(dailyPeaks.get(day), playercount));
+    });
+
+    cursor.on("close", function () {
+      const sortedPeaks = new Map([...dailyPeaks.entries()].sort());
+      result = [];
+
+      sortedPeaks.forEach((value, key) =>
+        result.push({
+          timestamp: key,
+          dailyPeak: value,
+        })
+      );
+      res.json(result);
+    });
+  }
+);
 
 // Get all the recorded player counts in the past 7 days
-router.get("/GetPlayerCounts/:gameid", cache("1 hour"), function(
-  req,
-  res,
-  next
-) {
-  const gameid = req.params.gameid;
-  // 7 days in milliseconds
-  const numDays = 7;
-  const minTime = new Date(Date.now() - 86400 * 1000 * numDays);
-  models.PlayerCount.find({
-    gameid: gameid,
-    timestamp: { $gte: minTime },
-  })
-    .sort({ timestamp: 1 })
-    .then(timestamps => res.json(timestamps))
-    .catch(err => console.log(err));
-});
-
-router.get("/GetJoinableCustomLobbies/", cache("5 minutes"), async function(
-  req,
-  res,
-  next
-) {
-  try {
-    // https://www.dota2.com/webapi/ILobbies/GetJoinableCustomLobbies/v0001
-    // [
-    //   {
-    //   lobby_id: "26064242351321102",
-    //   custom_game_id: "1613886175",
-    //   member_count: 1,
-    //   leader_account_id: 878302771,
-    //   leader_name: "saurtis",
-    //   custom_map_name: "normal",
-    //   max_player_count: 8,
-    //   server_region: 3,
-    //   has_pass_key: false
-    //   }
-    // ]
-  } catch (err) {
-    console.log(err);
+router.get(
+  "/GetPlayerCounts/:gameid",
+  cache("1 hour"),
+  function (req, res, next) {
+    const gameid = req.params.gameid;
+    // 7 days in milliseconds
+    const numDays = 7;
+    const minTime = new Date(Date.now() - 86400 * 1000 * numDays);
+    models.PlayerCount.find({
+      gameid: gameid,
+      timestamp: { $gte: minTime },
+    })
+      .sort({ timestamp: 1 })
+      .then((timestamps) => res.json(timestamps))
+      .catch((err) => console.log(err));
   }
-});
+);
 
-router.get("/GetGameStats/:gameid", cache("5 minutes"), async function(
-  req,
-  res,
-  next
-) {
-  try {
-    const stats = await GetStatsForGame(req.params.gameid);
-    res.json(stats);
-  } catch (err) {
-    console.log(err);
+router.get(
+  "/GetGameStats/:gameid",
+  cache("5 minutes"),
+  async function (req, res, next) {
+    try {
+      const stats = await GetStatsForGame(req.params.gameid);
+      res.json(stats);
+    } catch (err) {
+      console.log(err);
+    }
   }
-});
+);
 
-router.get("/GetGameStats", cache("5 minutes"), async function(req, res, next) {
-  try {
-    const GetPopularGamesRequest = await fetch(
-      "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?"
-    );
-    if (!GetPopularGamesRequest.ok) {
-      throw Error(
-        `Request rejected with status ${GetPopularGamesRequest.status}`
+router.get(
+  "/GetGameStats",
+  cache("5 minutes"),
+  async function (req, res, next) {
+    try {
+      const GetPopularGamesRequest = await fetch(
+        "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?"
       );
+      if (!GetPopularGamesRequest.ok) {
+        throw Error(
+          `Request rejected with status ${GetPopularGamesRequest.status}`
+        );
+      }
+      const PopularGamesJSON = await GetPopularGamesRequest.json();
+      // Only get the top 100 custom games
+      const start = 0;
+      const end = 100;
+      const popular_games = PopularGamesJSON.result.custom_games.slice(
+        start,
+        end
+      );
+
+      let game_stats = [];
+      let promises = [];
+
+      for (let i = 0; i < popular_games.length; i++) {
+        promises.push(GetStatsForGame(popular_games[i].id));
+      }
+
+      const results = await Promise.all(promises);
+      for (const stats of results) {
+        game_stats.push(stats);
+      }
+
+      res.json(game_stats);
+    } catch (error) {
+      return error;
     }
-    const PopularGamesJSON = await GetPopularGamesRequest.json();
-    // Only get the top 100 custom games
-    const start = 0;
-    const end = 100;
-    const popular_games = PopularGamesJSON.result.custom_games.slice(
-      start,
-      end
-    );
-
-    let game_stats = [];
-    let promises = [];
-
-    for (let i = 0; i < popular_games.length; i++) {
-      promises.push(GetStatsForGame(popular_games[i].id));
-    }
-
-    const results = await Promise.all(promises);
-    for (const stats of results) {
-      game_stats.push(stats);
-    }
-
-    res.json(game_stats);
-  } catch (error) {
-    return error;
   }
-});
+);
 
 module.exports = router;
