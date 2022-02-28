@@ -7,31 +7,31 @@ export default function PlayerCountGraph(props) {
 
   const options = {
     title: {
-      text: title
+      text: title,
     },
     chart: {
-      zoomType: "x"
+      zoomType: "x",
     },
     subtitle: {
       text:
         document.ontouchstart === undefined
           ? "Click and drag in the plot area to zoom in"
-          : "Pinch the chart to zoom in"
+          : "Pinch the chart to zoom in",
     },
     xAxis: {
-      type: "datetime"
+      type: "datetime",
     },
     yAxis: {
       title: {
-        text: undefined
-      }
+        text: undefined,
+      },
     },
     tooltip: {
       xDateFormat: "%B %e, %H:%M",
-      shared: true
+      shared: true,
     },
     legend: {
-      enabled: false
+      enabled: false,
     },
     plotOptions: {
       area: {
@@ -40,7 +40,7 @@ export default function PlayerCountGraph(props) {
             x1: 0,
             y1: 0,
             x2: 0,
-            y2: 1
+            y2: 1,
           },
           stops: [
             [0, Highcharts.getOptions().colors[0]],
@@ -48,29 +48,30 @@ export default function PlayerCountGraph(props) {
               1,
               Highcharts.Color(Highcharts.getOptions().colors[0])
                 .setOpacity(0)
-                .get("rgba")
-            ]
-          ]
+                .get("rgba"),
+            ],
+          ],
         },
         marker: {
-          radius: 2
+          radius: 2,
         },
         lineWidth: 1,
         states: {
           hover: {
-            lineWidth: 1
-          }
+            lineWidth: 1,
+          },
         },
-        threshold: null
-      }
+        threshold: 0,
+        turboThreshold: 9000,
+      },
     },
     series: [
       {
         type: "area",
         name: "Players",
-        data: data
-      }
-    ]
+        data: data,
+      },
+    ],
   };
 
   return (
