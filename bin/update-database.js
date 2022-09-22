@@ -14,7 +14,7 @@ if (process.env.IS_PRODUCTION) {
 mongoose
   .connect(db, { useNewUrlParser: true })
   .then(() => console.log("MongoDB Connected..."))
-  .catch(err => console.log(err));
+  .catch((err) => console.log(err));
 
 // A list of games that we should always record stats for, regardless of their appearance on the top 100
 const whitelist = [
@@ -22,10 +22,11 @@ const whitelist = [
   1166137767, // the frostivus festival
   1759829094, // Courier TD
   1757281740, // Castle Fight
-  2077900442 // Path of Guardians
+  2077900442, // Path of Guardians
+  2865676075, // ability arena
 ];
 
-const GetPlayerCounts = async gameid => {
+const GetPlayerCounts = async (gameid) => {
   const url = `https://www.dota2.com/webapi/ICustomGames/GetGamePlayerCounts/v0001/?custom_game_id=${gameid}`;
 
   const request = await fetch(url);
@@ -34,13 +35,13 @@ const GetPlayerCounts = async gameid => {
   if (gameStats.player_count !== undefined) {
     return {
       gameid: gameid,
-      playercount: gameStats.player_count
+      playercount: gameStats.player_count,
     };
   }
 
   return {
     gameid: gameid,
-    playercount: -1
+    playercount: -1,
   };
 };
 
@@ -79,13 +80,13 @@ const DownloadPlayerCounts = async () => {
 
   const results = await Promise.all(promises);
 
-  await models.PlayerCount.create(results, function(err) {
+  await models.PlayerCount.create(results, function (err) {
     if (err) console.log(err);
     console.log("saved");
     process.exit();
   });
 };
 
-(async function() {
+(async function () {
   await DownloadPlayerCounts();
 })();
