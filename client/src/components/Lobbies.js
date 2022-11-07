@@ -15,7 +15,7 @@ import withSizes from "react-sizes";
 
 const styles = (theme) => ({
   root: {
-    marginTop: theme.spacing.unit * 3,
+    marginTop: theme.spacing(3),
     padding: "1rem",
     maxWidth: 900,
     margin: "auto",
@@ -61,6 +61,9 @@ const styles = (theme) => ({
     paddingRight: 4,
     paddingLeft: 5,
     maxWidth: 300,
+  },
+  th: {
+    fontSize: "0.75rem",
   },
 });
 
@@ -244,7 +247,7 @@ class EnhancedTableBody extends React.PureComponent {
 
 class EnhancedTableRow extends React.PureComponent {
   render() {
-    const { lobby, classes, isMobile } = this.props;
+    const { lobby, classes } = this.props;
     return (
       <TableRow className={`${classes.row}`} hover tabIndex={-1}>
         <TableCell className={classes.tableCell}>

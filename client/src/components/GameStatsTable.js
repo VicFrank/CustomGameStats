@@ -15,58 +15,58 @@ import Link from "@material-ui/core/Link";
 import moment from "moment";
 import withSizes from "react-sizes";
 
-const styles = theme => ({
+const styles = (theme) => ({
   root: {
-    marginTop: theme.spacing.unit * 3,
+    marginTop: theme.spacing(3),
     padding: "1rem",
-    maxWidth: 900,
-    margin: "auto"
+    maxWidth: 1000,
+    margin: "auto",
   },
   tableWrapper: {
-    overflowX: "auto"
+    overflowX: "auto",
   },
   row: {
     "&:nth-of-type(odd)": {
-      backgroundColor: theme.palette.background.default
-    }
+      backgroundColor: theme.palette.background.default,
+    },
   },
   "@keyframes placeHolderShimmer": {
     "0%": {
-      background: "#ececec"
+      background: "#ececec",
     },
 
     "30%": {
-      background: "#F7F7F7"
+      background: "#F7F7F7",
     },
 
     "50%": {
-      background: "#ececec"
+      background: "#ececec",
     },
 
     "80%": {
-      background: "#F7F7F7"
+      background: "#F7F7F7",
     },
 
     "100%": {
-      background: "#ececec"
-    }
+      background: "#ececec",
+    },
   },
   loading: {
     animation: "placeHolderShimmer 3s infinite",
-    padding: "10px"
+    padding: "10px",
   },
   avatar: {
-    marginRight: "6px"
+    marginRight: "6px",
   },
   nameHolder: {
     display: "flex",
-    alignItems: "center"
+    alignItems: "center",
   },
   tableCell: {
     paddingRight: 4,
     paddingLeft: 5,
-    maxWidth: 300
-  }
+    maxWidth: 300,
+  },
 });
 
 function desc(a, b, orderBy) {
@@ -86,7 +86,7 @@ function stableSort(array, cmp) {
     if (order !== 0) return order;
     return a[1] - b[1];
   });
-  return stabilizedThis.map(el => el[0]);
+  return stabilizedThis.map((el) => el[0]);
 }
 
 function getSorting(order, orderBy) {
@@ -102,33 +102,33 @@ const rows = [
     id: "player_count",
     numeric: true,
     label: "Current Players",
-    showOnMobile: true
+    showOnMobile: true,
   },
   {
     id: "dailyPeak",
     numeric: true,
-    label: "Daily Peak"
+    label: "Daily Peak",
   },
   {
     id: "allTimePeak",
     numeric: true,
-    label: "All Time Peak"
+    label: "All Time Peak",
   },
   {
     id: "subscriptions",
     numeric: true,
-    label: "Subscribers"
+    label: "Subscribers",
   },
   {
     id: "last_update",
     numeric: true,
     label: "Last Update",
-    showOnMobile: true
-  }
+    showOnMobile: true,
+  },
 ];
 
 const mapSizesToProps = ({ width }) => ({
-  isMobile: width < 600
+  isMobile: width < 600,
 });
 
 class EnhancedTable extends React.Component {
@@ -136,13 +136,13 @@ class EnhancedTable extends React.Component {
     order: "asc",
     orderBy: "",
     data: [],
-    isLoading: true
+    isLoading: true,
   };
 
   componentDidMount() {
     fetch("/custom-games/GetGameStats")
-      .then(res => res.json())
-      .then(res => {
+      .then((res) => res.json())
+      .then((res) => {
         let rank = 1;
         for (let element of res) {
           element.rank = rank;
@@ -151,8 +151,8 @@ class EnhancedTable extends React.Component {
         this.setState({ isLoading: false });
         return res;
       })
-      .then(res => this.setState({ data: res }))
-      .catch(err => console.log(err));
+      .then((res) => this.setState({ data: res }))
+      .catch((err) => console.log(err));
   }
 
   handleRequestSort = (event, property) => {
@@ -166,7 +166,7 @@ class EnhancedTable extends React.Component {
     this.setState({ order, orderBy });
 
     this.setState({
-      data: stableSort(this.state.data, getSorting(order, orderBy))
+      data: stableSort(this.state.data, getSorting(order, orderBy)),
     });
   };
 
@@ -199,7 +199,7 @@ class EnhancedTable extends React.Component {
 }
 
 class EnhancedTableHead extends React.Component {
-  createSortHandler = property => event => {
+  createSortHandler = (property) => (event) => {
     this.props.onRequestSort(event, property);
   };
 
@@ -210,24 +210,21 @@ class EnhancedTableHead extends React.Component {
       <TableHead>
         <TableRow>
           {rows.map(
-            row =>
+            (row) =>
               (!isMobile || row.showOnMobile) && (
                 <TableCell
                   key={row.id}
                   className={classes.tableCell}
                   align={row.numeric ? "right" : "left"}
-                  sortDirection={orderBy === row.id ? order : false}
-                >
+                  sortDirection={orderBy === row.id ? order : false}>
                   <Tooltip
                     title="Sort"
                     placement={row.numeric ? "bottom-end" : "bottom-start"}
-                    enterDelay={300}
-                  >
+                    enterDelay={300}>
                     <TableSortLabel
                       active={orderBy === row.id}
                       direction={order}
-                      onClick={this.createSortHandler(row.id)}
-                    >
+                      onClick={this.createSortHandler(row.id)}>
                       {row.label}
                     </TableSortLabel>
                   </Tooltip>
@@ -244,7 +241,7 @@ class EnhancedTableHead extends React.Component {
 EnhancedTableHead.propTypes = {
   onRequestSort: PropTypes.func.isRequired,
   order: PropTypes.string.isRequired,
-  orderBy: PropTypes.string.isRequired
+  orderBy: PropTypes.string.isRequired,
 };
 
 class EnhancedTableBody extends React.PureComponent {
@@ -255,7 +252,7 @@ class EnhancedTableBody extends React.PureComponent {
 
     return (
       <TableBody>
-        {data.map(game => {
+        {data.map((game) => {
           return (
             <EnhancedTableRow
               classes={classes}
@@ -327,7 +324,7 @@ class EnhancedTableRow extends React.PureComponent {
 }
 
 EnhancedTable.propTypes = {
-  classes: PropTypes.object.isRequired
+  classes: PropTypes.object.isRequired,
 };
 
 export default withSizes(mapSizesToProps)(withStyles(styles)(EnhancedTable));

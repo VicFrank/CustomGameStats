@@ -8,7 +8,7 @@ import Popper from "@material-ui/core/Popper";
 import Paper from "@material-ui/core/Paper";
 import MenuItem from "@material-ui/core/MenuItem";
 import SearchIcon from "@material-ui/icons/Search";
-import { fade } from "@material-ui/core/styles/colorManipulator";
+import { alpha } from "@material-ui/core/styles";
 import { withRouter } from "react-router";
 
 function renderInput(inputProps) {
@@ -20,9 +20,9 @@ function renderInput(inputProps) {
         inputRef: ref,
         classes: {
           root: classes.inputRoot,
-          input: classes.inputInput
+          input: classes.inputInput,
         },
-        ...InputProps
+        ...InputProps,
       }}
       {...other}
     />
@@ -34,7 +34,7 @@ function renderSuggestion({
   index,
   itemProps,
   highlightedIndex,
-  selectedItem
+  selectedItem,
 }) {
   const isHighlighted = highlightedIndex === index;
 
@@ -43,8 +43,7 @@ function renderSuggestion({
       {...itemProps}
       key={suggestion.gamename}
       selected={isHighlighted}
-      component="div"
-    >
+      component="div">
       {suggestion.gamename}
     </MenuItem>
   );
@@ -54,65 +53,65 @@ renderSuggestion.propTypes = {
   index: PropTypes.number,
   itemProps: PropTypes.object,
   selectedItem: PropTypes.string,
-  suggestion: PropTypes.shape({ label: PropTypes.string }).isRequired
+  suggestion: PropTypes.shape({ label: PropTypes.string }).isRequired,
 };
 
-const styles = theme => ({
+const styles = (theme) => ({
   container: {
     position: "relative",
     borderRadius: theme.shape.borderRadius,
-    backgroundColor: fade(theme.palette.common.white, 0.15),
+    backgroundColor: alpha(theme.palette.common.white, 0.15),
     "&:hover": {
-      backgroundColor: fade(theme.palette.common.white, 0.25)
+      backgroundColor: alpha(theme.palette.common.white, 0.25),
     },
     marginLeft: 0,
     width: "100%",
     [theme.breakpoints.up("sm")]: {
-      marginLeft: theme.spacing.unit,
-      width: "auto"
-    }
+      marginLeft: theme.spacing(1),
+      width: "auto",
+    },
   },
   paper: {
     position: "absolute",
     zIndex: 1,
-    marginTop: theme.spacing.unit,
+    marginTop: theme.spacing(1),
     left: 0,
-    right: 0
+    right: 0,
   },
   inputRoot: {
     color: "inherit",
-    width: "100%"
+    width: "100%",
   },
   inputInput: {
-    paddingTop: theme.spacing.unit,
-    paddingRight: theme.spacing.unit,
-    paddingBottom: theme.spacing.unit,
-    paddingLeft: theme.spacing.unit * 10,
+    paddingTop: theme.spacing(1),
+    paddingRight: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
+    paddingLeft: theme.spacing(10),
     transition: theme.transitions.create("width"),
     width: "100%",
     [theme.breakpoints.up("sm")]: {
       width: 120,
       "&:focus": {
-        width: 200
-      }
-    }
+        width: 200,
+      },
+    },
   },
   searchIcon: {
-    width: theme.spacing.unit * 9,
+    width: theme.spacing(9),
     height: "100%",
     position: "absolute",
     pointerEvents: "none",
     display: "flex",
     alignItems: "center",
-    justifyContent: "center"
-  }
+    justifyContent: "center",
+  },
 });
 
 let popperNode;
 
 class SearchBar extends React.Component {
   state = {
-    gameNames: []
+    gameNames: [],
   };
 
   componentDidMount() {
@@ -121,19 +120,19 @@ class SearchBar extends React.Component {
 
   fetchData = () => {
     fetch("/custom-games/GetAllGames")
-      .then(res => res.json())
-      .then(res => this.setState({ gameNames: res }))
-      .catch(err => console.log(err));
+      .then((res) => res.json())
+      .then((res) => this.setState({ gameNames: res }))
+      .catch((err) => console.log(err));
   };
 
-  getSuggestions = value => {
+  getSuggestions = (value) => {
     const inputValue = deburr(value.trim()).toLowerCase();
     const inputLength = inputValue.length;
     let count = 0;
 
     return inputLength === 0
       ? []
-      : this.state.gameNames.filter(gameData => {
+      : this.state.gameNames.filter((gameData) => {
           const keep =
             gameData["gamename"] !== undefined &&
             gameData["gamename"] !== null &&
@@ -162,9 +161,8 @@ class SearchBar extends React.Component {
       <div className={classes.root}>
         <Downshift
           onChange={this.handleChange}
-          itemToString={gameData => (gameData ? gameData["gamename"] : "")}
-          id="downshift-popper"
-        >
+          itemToString={(gameData) => (gameData ? gameData["gamename"] : "")}
+          id="downshift-popper">
           {({
             getInputProps,
             getItemProps,
@@ -172,7 +170,7 @@ class SearchBar extends React.Component {
             highlightedIndex,
             inputValue,
             isOpen,
-            selectedItem
+            selectedItem,
           }) => (
             <div className={classes.container}>
               <div className={classes.searchIcon}>
@@ -182,32 +180,30 @@ class SearchBar extends React.Component {
                 fullWidth: true,
                 classes,
                 InputProps: getInputProps({
-                  placeholder: "Search..."
+                  placeholder: "Search...",
                 }),
-                ref: node => {
+                ref: (node) => {
                   popperNode = node;
-                }
+                },
               })}
               <Popper open={isOpen} anchorEl={popperNode}>
                 <div
                   {...(isOpen
                     ? getMenuProps({}, { suppressRefError: true })
-                    : {})}
-                >
+                    : {})}>
                   <Paper
                     square
                     style={{
                       marginTop: 8,
-                      width: popperNode ? popperNode.clientWidth : null
-                    }}
-                  >
+                      width: popperNode ? popperNode.clientWidth : null,
+                    }}>
                     {this.getSuggestions(inputValue).map((suggestion, index) =>
                       renderSuggestion({
                         suggestion,
                         index,
                         itemProps: getItemProps({ item: suggestion }),
                         highlightedIndex,
-                        selectedItem
+                        selectedItem,
                       })
                     )}
                   </Paper>
@@ -222,7 +218,7 @@ class SearchBar extends React.Component {
 }
 
 SearchBar.propTypes = {
-  classes: PropTypes.object.isRequired
+  classes: PropTypes.object.isRequired,
 };
 
 export default withRouter(withStyles(styles)(SearchBar));
