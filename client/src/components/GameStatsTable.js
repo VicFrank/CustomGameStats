@@ -216,15 +216,18 @@ class EnhancedTableHead extends React.Component {
                   key={row.id}
                   className={classes.tableCell}
                   align={row.numeric ? "right" : "left"}
-                  sortDirection={orderBy === row.id ? order : false}>
+                  sortDirection={orderBy === row.id ? order : false}
+                >
                   <Tooltip
                     title="Sort"
                     placement={row.numeric ? "bottom-end" : "bottom-start"}
-                    enterDelay={300}>
+                    enterDelay={300}
+                  >
                     <TableSortLabel
                       active={orderBy === row.id}
                       direction={order}
-                      onClick={this.createSortHandler(row.id)}>
+                      onClick={this.createSortHandler(row.id)}
+                    >
                       {row.label}
                     </TableSortLabel>
                   </Tooltip>

@@ -13,3 +13,25 @@ code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, "Courier New",
     monospace;
 }
+
+@keyframes placeHolderShimmer {
+  0% {
+    background: #ececec;
+  }
+
+  30% {
+    background: #f7f7f7;
+  }
+
+  50% {
+    background: #ececec;
+  }
+
+  80% {
+    background: #f7f7f7;
+  }
+
+  100% {
+    background: #ececec;
+  }
+}

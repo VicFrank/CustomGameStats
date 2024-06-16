@@ -136,6 +136,23 @@ const GetStatsForGame = async (gameid) => {
   }
 };
 
+const gameCache = new Map();
+
+const GetStatsForGameFromCache = async (gameid) => {
+  const updateCache = async (gameid) => {
+    const stats = await GetStatsForGame(gameid);
+    gameCache.set(gameid, stats);
+    return stats;
+  };
+
+  if (gameCache.has(gameid)) {
+    updateCache(gameid);
+    return gameCache.get(gameid);
+  }
+
+  return await updateCache(gameid);
+};
+
 router.get(
   "/GetPopularGames",
   cache("1 hour"),
@@ -337,7 +354,7 @@ router.get(
       let promises = [];
 
       for (let i = 0; i < popular_games.length; i++) {
-        promises.push(GetStatsForGame(popular_games[i].id));
+        promises.push(GetStatsForGameFromCache(popular_games[i].id));
       }
 
       const results = await Promise.all(promises);
