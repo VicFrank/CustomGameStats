@@ -11,33 +11,48 @@ import Paper from "@material-ui/core/Paper";
 import TableRow from "@material-ui/core/TableRow";
 import Link from "@material-ui/core/Link";
 import Grid from "@material-ui/core/Grid";
+import CircularProgress from "@material-ui/core/CircularProgress";
 
 import PlayerCountGraphSelector from "./PlayerCountGraphSelector";
 
-const styles = theme => ({
+const styles = (theme) => ({
   root: {
     marginTop: "1.5rem",
     maxWidth: 1000,
-    margin: "auto"
+    margin: "auto",
   },
   media: {
-    height: 475
+    height: 475,
   },
   leftInfo: {
     width: 600,
-    height: 528
+    height: 528,
   },
   table: {
-    width: 400
+    width: 400,
   },
   title: {
-    justifyContent: "center"
+    justifyContent: "center",
   },
   row: {
     "&:nth-of-type(odd)": {
-      backgroundColor: theme.palette.background.default
-    }
-  }
+      backgroundColor: theme.palette.background.default,
+    },
+  },
+  loadingContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: 400,
+    width: "100%",
+  },
+  errorContainer: {
+    display: "flex",
+    justifyContent: "center",
+    alignItems: "center",
+    minHeight: 200,
+    width: "100%",
+  },
 });
 
 class GameStats extends Component {
@@ -56,7 +71,9 @@ class GameStats extends Component {
     dailyPeak: 0,
     allTimePeak: 0,
     hourlyDataPoints: [],
-    dailyDataPoints: []
+    dailyDataPoints: [],
+    isLoading: true,
+    error: null,
   };
 
   componentDidMount() {
@@ -65,41 +82,46 @@ class GameStats extends Component {
 
   componentDidUpdate(prevProps) {
     if (this.props.match.params.id !== prevProps.match.params.id) {
+      this.setState({ isLoading: true, error: null });
       this.fetchData(this.props.match.params.id);
     }
   }
 
-  fetchData = gameid => {
-    fetch(`/custom-games/GetGameStats/${gameid}`)
-      .then(res => res.json())
-      .then(res => this.setState({ ...res }))
-      .catch(err => console.log(err));
+  fetchData = (gameid) => {
+    const statsPromise = fetch(`/custom-games/GetGameStats/${gameid}`).then(
+      (res) => {
+        if (!res.ok) throw new Error("Failed to load game stats");
+        return res.json();
+      },
+    );
 
-    fetch(`/custom-games/GetPlayerCounts/${gameid}`)
-      .then(res => res.json())
-      .then(playerCounts => {
-        let hourlyDataPoints = [];
-        for (let data of playerCounts) {
+    const playerCountsPromise = fetch(`/custom-games/GetPlayerCounts/${gameid}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load player counts");
+        return res.json();
+      })
+      .then((playerCounts) => {
+        const hourlyDataPoints = [];
+        for (const data of playerCounts) {
           hourlyDataPoints.push({
             x: Date.parse(data.timestamp),
-            y: data.playercount
+            y: data.playercount,
           });
         }
         return hourlyDataPoints;
-      })
-      .then(hourlyDataPoints =>
-        this.setState({ hourlyDataPoints: hourlyDataPoints })
-      )
-      .catch(err => console.log(err));
+      });
 
-    fetch(`/custom-games/GetDailyPeaks/${gameid}`)
-      .then(res => res.json())
-      .then(playerCounts => {
-        let dailyDataPoints = [];
-        for (let data of playerCounts) {
+    const dailyPeaksPromise = fetch(`/custom-games/GetDailyPeaks/${gameid}`)
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load daily peaks");
+        return res.json();
+      })
+      .then((playerCounts) => {
+        const dailyDataPoints = [];
+        for (const data of playerCounts) {
           dailyDataPoints.push({
             x: new Date(data.timestamp).getTime(),
-            y: data.dailyPeak
+            y: data.dailyPeak,
           });
         }
         // discard the first and last data points, since they don't reflect
@@ -107,12 +129,28 @@ class GameStats extends Component {
         dailyDataPoints.pop();
         dailyDataPoints.shift();
         return dailyDataPoints;
+      });
+
+    Promise.all([statsPromise, playerCountsPromise, dailyPeaksPromise])
+      .then(([stats, hourlyDataPoints, dailyDataPoints]) => {
+        document.title = `${stats.title} - Custom Game Stats`;
+        this.setState({
+          ...stats,
+          hourlyDataPoints,
+          dailyDataPoints,
+          isLoading: false,
+          error: null,
+        });
       })
-      .then(dailyDataPoints =>
-        this.setState({ dailyDataPoints: dailyDataPoints })
-      )
-      .catch(err => console.log(err));
+      .catch((err) => {
+        console.error(err);
+        this.setState({ isLoading: false, error: err.message });
+      });
   };
+
+  componentWillUnmount() {
+    document.title = "Custom Game Stats";
+  }
 
   render() {
     const { classes } = this.props;
@@ -129,8 +167,29 @@ class GameStats extends Component {
       lifetime_subscriptions,
       preview_url,
       dailyPeak,
-      allTimePeak
+      allTimePeak,
+      isLoading,
+      error,
     } = this.state;
+
+    if (isLoading) {
+      return (
+        <div className={classes.loadingContainer}>
+          <CircularProgress />
+        </div>
+      );
+    }
+
+    if (error) {
+      return (
+        <div className={classes.errorContainer}>
+          <Typography variant="h6" color="error">
+            {error}
+          </Typography>
+        </div>
+      );
+    }
+
     return (
       <Grid
         className={classes.root}
@@ -141,17 +200,18 @@ class GameStats extends Component {
       >
         <Paper className={classes.leftInfo}>
           <ListItem className={classes.title}>
-            <Typography variant="title">{title}</Typography>
+            <Typography variant="h6">{title}</Typography>
           </ListItem>
           <CardMedia
             className={classes.media}
             image={preview_url}
             title={title}
-            src="image"
+            component="img"
+            alt={title || "Game preview"}
           />
         </Paper>
         <Paper className={classes.table}>
-          <Table>
+          <Table aria-label="Game statistics">
             <TableBody>
               <TableRow className={classes.row}>
                 <TableCell>Current Players</TableCell>
@@ -216,6 +276,8 @@ class GameStats extends Component {
                 <TableCell align="right">
                   <Link
                     href={`https://steamcommunity.com/sharedfiles/filedetails/?id=${id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
                   >
                     {id}
                   </Link>
@@ -236,7 +298,7 @@ class GameStats extends Component {
 }
 
 GameStats.propTypes = {
-  classes: PropTypes.object.isRequired
+  classes: PropTypes.object.isRequired,
 };
 
 export default withStyles(styles)(GameStats);

@@ -43,7 +43,8 @@ function renderSuggestion({
       {...itemProps}
       key={suggestion.gamename}
       selected={isHighlighted}
-      component="div">
+      component="div"
+    >
       {suggestion.gamename}
     </MenuItem>
   );
@@ -137,8 +138,7 @@ class SearchBar extends React.Component {
             gameData["gamename"] !== undefined &&
             gameData["gamename"] !== null &&
             count < 5 &&
-            gameData["gamename"].slice(0, inputLength).toLowerCase() ===
-              inputValue;
+            gameData["gamename"].toLowerCase().includes(inputValue);
 
           if (keep) {
             count += 1;
@@ -162,7 +162,8 @@ class SearchBar extends React.Component {
         <Downshift
           onChange={this.handleChange}
           itemToString={(gameData) => (gameData ? gameData["gamename"] : "")}
-          id="downshift-popper">
+          id="downshift-popper"
+        >
           {({
             getInputProps,
             getItemProps,
@@ -190,13 +191,15 @@ class SearchBar extends React.Component {
                 <div
                   {...(isOpen
                     ? getMenuProps({}, { suppressRefError: true })
-                    : {})}>
+                    : {})}
+                >
                   <Paper
                     square
                     style={{
                       marginTop: 8,
                       width: popperNode ? popperNode.clientWidth : null,
-                    }}>
+                    }}
+                  >
                     {this.getSuggestions(inputValue).map((suggestion, index) =>
                       renderSuggestion({
                         suggestion,
@@ -204,7 +207,7 @@ class SearchBar extends React.Component {
                         itemProps: getItemProps({ item: suggestion }),
                         highlightedIndex,
                         selectedItem,
-                      })
+                      }),
                     )}
                   </Paper>
                 </div>

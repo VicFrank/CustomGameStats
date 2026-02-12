@@ -8,8 +8,6 @@ import NavBar from "./components/NavBar";
 import NoMatch from "./components/NoMatch";
 
 class App extends Component {
-  state = { popular_games: [] };
-
   render() {
     return (
       <div className="App">

@@ -2,19 +2,9 @@
 
 const fetch = require("node-fetch");
 const models = require("../models/game-stats");
-const mongoose = require("mongoose");
+const connectDB = require("../lib/db");
 
-let db;
-if (process.env.IS_PRODUCTION) {
-  db = process.env.DATABASE_URL;
-} else {
-  db = require("../config/keys").mongoURI;
-}
-
-mongoose
-  .connect(db, { useNewUrlParser: true })
-  .then(() => console.log("MongoDB Connected..."))
-  .catch((err) => console.log(err));
+connectDB();
 
 // A list of games that we should always record stats for, regardless of their appearance on the top 100
 const whitelist = [
@@ -27,16 +17,20 @@ const whitelist = [
 ];
 
 const GetPlayerCounts = async (gameid) => {
-  const url = `https://www.dota2.com/webapi/ICustomGames/GetGamePlayerCounts/v0001/?custom_game_id=${gameid}`;
+  try {
+    const url = `https://www.dota2.com/webapi/ICustomGames/GetGamePlayerCounts/v0001/?custom_game_id=${gameid}`;
 
-  const request = await fetch(url);
-  const gameStats = await request.json();
+    const request = await fetch(url);
+    const gameStats = await request.json();
 
-  if (gameStats.player_count !== undefined) {
-    return {
-      gameid: gameid,
-      playercount: gameStats.player_count,
-    };
+    if (gameStats.player_count !== undefined) {
+      return {
+        gameid: gameid,
+        playercount: gameStats.player_count,
+      };
+    }
+  } catch (error) {
+    console.log(`Error fetching player count for ${gameid}:`, error);
   }
 
   return {
@@ -45,9 +39,29 @@ const GetPlayerCounts = async (gameid) => {
   };
 };
 
+// Run promises with a concurrency limit
+const runWithConcurrency = async (tasks, concurrency) => {
+  const results = [];
+  let index = 0;
+
+  const runNext = async () => {
+    while (index < tasks.length) {
+      const currentIndex = index++;
+      results[currentIndex] = await tasks[currentIndex]();
+    }
+  };
+
+  const workers = Array.from(
+    { length: Math.min(concurrency, tasks.length) },
+    () => runNext(),
+  );
+  await Promise.all(workers);
+  return results;
+};
+
 const DownloadPlayerCounts = async () => {
   const request = await fetch(
-    "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?"
+    "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?",
   );
   const topGames = await request.json();
   const numGamesToGet = 100;
@@ -68,17 +82,20 @@ const DownloadPlayerCounts = async () => {
     }
   }
 
-  let promises = [];
+  // Build task list with concurrency limit of 10
+  const tasks = [];
 
   for (let i = 0; i < topGamesData.length; i++) {
-    promises.push(GetPlayerCounts(topGamesData[i].id));
+    const id = topGamesData[i].id;
+    tasks.push(() => GetPlayerCounts(id));
   }
 
   for (let i = 0; i < gamesToAdd.length; i++) {
-    promises.push(GetPlayerCounts(gamesToAdd[i]));
+    const id = gamesToAdd[i];
+    tasks.push(() => GetPlayerCounts(id));
   }
 
-  const results = await Promise.all(promises);
+  const results = await runWithConcurrency(tasks, 10);
 
   await models.PlayerCount.create(results, function (err) {
     if (err) console.log(err);

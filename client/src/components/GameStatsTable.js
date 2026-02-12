@@ -10,10 +10,17 @@ import TableSortLabel from "@material-ui/core/TableSortLabel";
 import Paper from "@material-ui/core/Paper";
 import Tooltip from "@material-ui/core/Tooltip";
 import Avatar from "@material-ui/core/Avatar";
+import Typography from "@material-ui/core/Typography";
 import { Link as RouterLink } from "react-router-dom";
 import Link from "@material-ui/core/Link";
-import moment from "moment";
-import withSizes from "react-sizes";
+import dayjs from "dayjs";
+import relativeTime from "dayjs/plugin/relativeTime";
+import useMediaQuery from "@material-ui/core/useMediaQuery";
+import { useTheme } from "@material-ui/core/styles";
+
+import { stableSort, getSorting } from "../utils/sorting";
+
+dayjs.extend(relativeTime);
 
 const styles = (theme) => ({
   root: {
@@ -69,32 +76,6 @@ const styles = (theme) => ({
   },
 });
 
-function desc(a, b, orderBy) {
-  if (b[orderBy] < a[orderBy]) {
-    return -1;
-  }
-  if (b[orderBy] > a[orderBy]) {
-    return 1;
-  }
-  return 0;
-}
-
-function stableSort(array, cmp) {
-  const stabilizedThis = array.map((el, index) => [el, index]);
-  stabilizedThis.sort((a, b) => {
-    const order = cmp(a[0], b[0]);
-    if (order !== 0) return order;
-    return a[1] - b[1];
-  });
-  return stabilizedThis.map((el) => el[0]);
-}
-
-function getSorting(order, orderBy) {
-  return order === "desc"
-    ? (a, b) => desc(a, b, orderBy)
-    : (a, b) => -desc(a, b, orderBy);
-}
-
 const rows = [
   { id: "rank", numeric: false, label: "Rank", showOnMobile: true },
   { id: "title", numeric: false, label: "Game", showOnMobile: true },
@@ -127,32 +108,34 @@ const rows = [
   },
 ];
 
-const mapSizesToProps = ({ width }) => ({
-  isMobile: width < 600,
-});
-
 class EnhancedTable extends React.Component {
   state = {
     order: "asc",
     orderBy: "",
     data: [],
     isLoading: true,
+    error: null,
   };
 
   componentDidMount() {
+    document.title = "Custom Game Stats";
     fetch("/custom-games/GetGameStats")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to load game stats");
+        return res.json();
+      })
       .then((res) => {
         let rank = 1;
-        for (let element of res) {
+        for (const element of res) {
           element.rank = rank;
           rank++;
         }
-        this.setState({ isLoading: false });
-        return res;
+        this.setState({ isLoading: false, data: res });
       })
-      .then((res) => this.setState({ data: res }))
-      .catch((err) => console.log(err));
+      .catch((err) => {
+        console.error(err);
+        this.setState({ isLoading: false, error: err.message });
+      });
   }
 
   handleRequestSort = (event, property) => {
@@ -163,16 +146,29 @@ class EnhancedTable extends React.Component {
       order = "asc";
     }
 
-    this.setState({ order, orderBy });
-
     this.setState({
+      order,
+      orderBy,
       data: stableSort(this.state.data, getSorting(order, orderBy)),
     });
   };
 
   render() {
     const { classes, isMobile } = this.props;
-    const { data, order, orderBy, isLoading } = this.state;
+    const { data, order, orderBy, isLoading, error } = this.state;
+
+    if (error) {
+      return (
+        <Paper
+          className={classes.root}
+          style={{ textAlign: "center", padding: "2rem" }}
+        >
+          <Typography variant="h6" color="error">
+            {error}
+          </Typography>
+        </Paper>
+      );
+    }
 
     return (
       <Paper className={classes.root}>
@@ -233,7 +229,7 @@ class EnhancedTableHead extends React.Component {
                   </Tooltip>
                 </TableCell>
               ),
-            this
+            this,
           )}
         </TableRow>
       </TableHead>
@@ -319,7 +315,7 @@ class EnhancedTableRow extends React.PureComponent {
           </TableCell>
         )}
         <TableCell className={classes.tableCell} align="right">
-          {game.last_update ? moment(game.last_update * 1000).fromNow() : "?"}
+          {game.last_update ? dayjs(game.last_update * 1000).fromNow() : "?"}
         </TableCell>
       </TableRow>
     );
@@ -330,4 +326,12 @@ EnhancedTable.propTypes = {
   classes: PropTypes.object.isRequired,
 };
 
-export default withSizes(mapSizesToProps)(withStyles(styles)(EnhancedTable));
+const StyledEnhancedTable = withStyles(styles)(EnhancedTable);
+
+function ResponsiveEnhancedTable(props) {
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("xs"));
+  return <StyledEnhancedTable {...props} isMobile={isMobile} />;
+}
+
+export default ResponsiveEnhancedTable;

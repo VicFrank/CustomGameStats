@@ -3,22 +3,17 @@
 // Populate GameStatsSchema with all the popular games, so we have a list of them
 const fetch = require("node-fetch");
 const models = require("../models/game-stats");
-const mongoose = require("mongoose");
 const sleep = require("util").promisify(setTimeout);
 
 const GetPublishedFileDetails = require("../lib/dota-api");
+const connectDB = require("../lib/db");
 
-const db = require("../config/keys").mongoURI;
-
-mongoose
-  .connect(db, { useNewUrlParser: true })
-  .then(() => console.log("MongoDB Connected..."))
-  .catch(err => console.log(err));
+connectDB();
 
 const AddAllGames = async () => {
   try {
     const request = await fetch(
-      "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?"
+      "https://www.dota2.com/webapi/ICustomGames/GetPopularGames/v0001/?",
     );
     const popularGamesJSON = await request.json();
     const popularGames = popularGamesJSON.result.custom_games;
@@ -40,7 +35,7 @@ const AddAllGames = async () => {
             if (err) console.log(err);
             count++;
             console.log(`${count} added ${title}`);
-          }
+          },
         );
       }
     }
