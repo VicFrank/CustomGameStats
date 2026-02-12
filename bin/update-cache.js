@@ -2,7 +2,7 @@ const fetch = require("node-fetch");
 // send a request to the homepage to update the cache
 
 let hitHomepage = async () => {
-  const route = "https://www.customgamestats.com/";
+  const route = "https://www.customgamestats.com/custom-games/GetGameStats";
 
   try {
     const response = await fetch(route);

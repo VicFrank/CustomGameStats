@@ -9,6 +9,20 @@ const customGamesRouter = require("./routes/custom-games");
 const port = process.env.PORT || 4000;
 const app = express();
 
+// IP blocking middleware
+const blockedIPs = ["43.135.157.221"];
+app.use((req, res, next) => {
+  const clientIP =
+    req.ip || req.connection.remoteAddress || req.headers["x-forwarded-for"];
+  const ipAddress = clientIP.replace(/^::ffff:/, ""); // Remove IPv6 prefix if present
+
+  if (blockedIPs.includes(ipAddress)) {
+    console.log(`Blocked request from IP: ${ipAddress}`);
+    return res.status(403).send("Access Forbidden");
+  }
+  next();
+});
+
 app.use(logger("dev"));
 app.use(express.json());
 
@@ -22,7 +36,7 @@ if (process.env.IS_PRODUCTION) {
 mongoose
   .connect(db, { useNewUrlParser: true })
   .then(() => console.log("MongoDB Connected..."))
-  .catch(err => console.log(err));
+  .catch((err) => console.log(err));
 
 // Serve static files from the React app
 app.use(express.static(path.join(__dirname, "client/build")));
