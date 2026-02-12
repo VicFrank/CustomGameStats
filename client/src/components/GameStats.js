@@ -88,7 +88,7 @@ class GameStats extends Component {
   }
 
   fetchData = (gameid) => {
-    const statsPromise = fetch(`/custom-games/GetGameStats/${gameid}`).then(
+    const statsPromise = fetch(`/custom-games/QueryMetrics/${gameid}`).then(
       (res) => {
         if (!res.ok) throw new Error("Failed to load game stats");
         return res.json();

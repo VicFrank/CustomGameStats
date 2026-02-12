@@ -372,7 +372,7 @@ router.get(
 );
 
 router.get(
-  "/GetGameStats/:gameid",
+  "/QueryMetrics/:gameid",
   cache("5 minutes"),
   async function (req, res, next) {
     const gameid = req.params.gameid;
@@ -392,7 +392,7 @@ router.get(
 );
 
 router.get(
-  "/GetGameStats",
+  "/QueryMetrics",
   cache("5 minutes"),
   async function (req, res, next) {
     try {

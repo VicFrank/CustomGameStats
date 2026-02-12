@@ -119,7 +119,7 @@ class EnhancedTable extends React.Component {
 
   componentDidMount() {
     document.title = "Custom Game Stats";
-    fetch("/custom-games/GetGameStats")
+    fetch("/custom-games/QueryMetrics")
       .then((res) => {
         if (!res.ok) throw new Error("Failed to load game stats");
         return res.json();
