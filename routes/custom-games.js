@@ -32,6 +32,7 @@ const getCachedPlayerCount = async (gameid) => {
 
     if (response.ok) {
       data = await response.json();
+      data.success = true;
     }
 
     playerCountCache.set(gameid, { data, timestamp: now });
@@ -371,25 +372,21 @@ router.get(
   },
 );
 
-router.get(
-  "/QueryMetrics/:gameid",
-  cache("5 minutes"),
-  async function (req, res, next) {
-    const gameid = req.params.gameid;
+router.get("/QueryMetrics/:gameid", async function (req, res, next) {
+  const gameid = req.params.gameid;
 
-    if (!isValidGameId(gameid)) {
-      return res.status(400).json({ error: "Invalid gameid" });
-    }
+  if (!isValidGameId(gameid)) {
+    return res.status(400).json({ error: "Invalid gameid" });
+  }
 
-    try {
-      const stats = await GetStatsForGame(gameid);
-      res.json(stats);
-    } catch (err) {
-      console.log(err);
-      return res.status(500).json({ error: "Failed to fetch game stats" });
-    }
-  },
-);
+  try {
+    const stats = await GetStatsForGame(gameid);
+    res.json(stats);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json({ error: "Failed to fetch game stats" });
+  }
+});
 
 router.get(
   "/QueryMetrics",
