@@ -4,8 +4,6 @@ const fetch = require("node-fetch");
 const models = require("../models/game-stats");
 const connectDB = require("../lib/db");
 
-connectDB();
-
 // A list of games that we should always record stats for, regardless of their appearance on the top 100
 const whitelist = [
   302491959, // battleships
@@ -95,15 +93,25 @@ const DownloadPlayerCounts = async () => {
     tasks.push(() => GetPlayerCounts(id));
   }
 
-  const results = await runWithConcurrency(tasks, 10);
+  const results = await runWithConcurrency(tasks, 1);
 
-  await models.PlayerCount.create(results, function (err) {
-    if (err) console.log(err);
-    console.log("saved");
-    process.exit();
-  });
+  // Filter out failed fetches (playercount: -1) before saving
+  const validResults = results.filter((r) => r.playercount >= 0);
+
+  // Save with concurrency limit to avoid exhausting the connection pool
+  // (each save triggers a pre-save hook with additional DB queries)
+  const saveTasks = validResults.map(
+    (result) => () =>
+      new models.PlayerCount(result).save().catch((err) => {
+        console.log(`Error saving player count for ${result.gameid}:`, err);
+      }),
+  );
+  await runWithConcurrency(saveTasks, 2);
+  console.log("saved");
+  process.exit();
 };
 
 (async function () {
+  await connectDB();
   await DownloadPlayerCounts();
 })();

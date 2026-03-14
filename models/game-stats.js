@@ -1,6 +1,5 @@
 const mongoose = require("mongoose");
 const Schema = mongoose.Schema;
-const GetPublishedFileDetails = require("../lib/dota-api");
 
 const GameStatsSchema = new Schema({
   gameid: {
@@ -102,22 +101,15 @@ PlayerCountSchema.pre("save", async function (next) {
     if (!gameStats) {
       console.log(`${this.gameid} is not being logged, adding to GameStats...`);
 
-      // Try to get the game name from Steam
-      let gamename = "Unknown Game";
-      const itemDetails = await GetPublishedFileDetails(this.gameid);
-      if (itemDetails != null && itemDetails.title) {
-        gamename = itemDetails.title;
-      }
-
-      // Create new GameStats entry
+      // Create new GameStats entry (game name will be populated later)
       gameStats = await GameStats.create({
         gameid: this.gameid,
-        gamename: gamename,
+        gamename: "Unknown Game",
         allTimePeak: this._id,
         dailyPeak: this._id,
       });
 
-      console.log(`Added ${gamename} (${this.gameid}) to GameStats`);
+      console.log(`Added ${this.gameid} to GameStats`);
       next();
       return;
     }
@@ -134,13 +126,11 @@ PlayerCountSchema.pre("save", async function (next) {
       // calculate the daily peak manually
       console.log(`found allTimePeak but not dailyPeak for ${this.gameid}`);
       const minTime = new Date(Date.now() - 86400 * 1000);
-      await this.model("PlayerCount")
+      const [recentPeak] = await this.model("PlayerCount")
         .find({ gameid: this.gameid, timestamp: { $gte: minTime } })
         .sort({ playercount: -1 })
-        .limit(1)
-        .then((newPeak) => {
-          gameStats.dailyPeak = newPeak[0];
-        });
+        .limit(1);
+      gameStats.dailyPeak = recentPeak || this;
       changed = true;
     } else {
       if (this.playercount > gameStats.allTimePeak.playercount) {
@@ -154,18 +144,16 @@ PlayerCountSchema.pre("save", async function (next) {
       // Update the daily peak if the current one has expired
       if (this.timestamp - gameStats.dailyPeak.timestamp > oneDayMS) {
         const minTime = new Date(Date.now() - 86400 * 1000);
-        await this.model("PlayerCount")
+        const [recentPeak] = await this.model("PlayerCount")
           .find({ gameid: this.gameid, timestamp: { $gte: minTime } })
           .sort({ playercount: -1 })
-          .limit(1)
-          .then((newPeak) => {
-            gameStats.dailyPeak = newPeak[0];
-          });
+          .limit(1);
+        gameStats.dailyPeak = recentPeak || this;
         changed = true;
       }
     }
 
-    if (changed) gameStats.save();
+    if (changed) await gameStats.save();
     next();
   } catch (error) {
     console.log(error);

@@ -15,6 +15,31 @@ const API_CACHE_TTL = 60 * 1000; // 1 minute
 const playerCountCache = new Map(); // { gameid: { data, timestamp } }
 const publishedFileCache = new Map(); // { gameid: { data, timestamp } }
 
+// Serial save queue — processes one PlayerCount save at a time to avoid
+// exhausting the MongoDB connection pool when many games are fetched together
+const saveQueue = [];
+let isSaveProcessing = false;
+
+const processNextSave = async () => {
+  if (saveQueue.length === 0) {
+    isSaveProcessing = false;
+    return;
+  }
+  isSaveProcessing = true;
+  const { gameid, playercount } = saveQueue.shift();
+  try {
+    await new models.PlayerCount({ gameid, playercount }).save();
+  } catch (err) {
+    console.log(`Error saving player count for ${gameid}:`, err);
+  }
+  processNextSave();
+};
+
+const enqueuePlayerCountSave = (gameid, playercount) => {
+  saveQueue.push({ gameid: String(gameid), playercount });
+  if (!isSaveProcessing) processNextSave();
+};
+
 // Cached wrapper for player count API
 const getCachedPlayerCount = async (gameid) => {
   const now = Date.now();
@@ -33,6 +58,9 @@ const getCachedPlayerCount = async (gameid) => {
     if (response.ok) {
       data = await response.json();
       data.success = true;
+
+      // Enqueue DB save (processed serially to avoid connection pool exhaustion)
+      enqueuePlayerCountSave(gameid, data.player_count);
     }
 
     playerCountCache.set(gameid, { data, timestamp: now });
@@ -419,19 +447,34 @@ router.get(
         cachedGameData.set(game.id, game);
       });
 
-      // Single database query for all peak stats
-      const allGameStats = await models.GameStats.find({
-        gameid: { $in: gameIds },
-      })
-        .populate("allTimePeak")
-        .populate("dailyPeak")
-        .lean();
+      // Compute peaks directly from PlayerCount records (reliable regardless of GameStats pointer state)
+      const oneDayAgo = new Date(Date.now() - 86400 * 1000);
+      const [allTimePeakAgg, dailyPeakAgg, allGameNames] = await Promise.all([
+        models.PlayerCount.aggregate([
+          { $match: { gameid: { $in: gameIds.map(String) } } },
+          { $group: { _id: "$gameid", allTimePeak: { $max: "$playercount" } } },
+        ]),
+        models.PlayerCount.aggregate([
+          {
+            $match: {
+              gameid: { $in: gameIds.map(String) },
+              timestamp: { $gte: oneDayAgo },
+            },
+          },
+          { $group: { _id: "$gameid", dailyPeak: { $max: "$playercount" } } },
+        ]),
+        models.GameStats.find({ gameid: { $in: gameIds } })
+          .select({ gameid: 1, gamename: 1, _id: 0 })
+          .lean(),
+      ]);
 
-      // Create lookup map for database stats
-      const dbStatsMap = new Map();
-      allGameStats.forEach((gs) => {
-        dbStatsMap.set(gs.gameid, gs);
-      });
+      const allTimePeakMap = new Map(
+        allTimePeakAgg.map((r) => [r._id, r.allTimePeak]),
+      );
+      const dailyPeakMap = new Map(
+        dailyPeakAgg.map((r) => [r._id, r.dailyPeak]),
+      );
+      const dbStatsMap = new Map(allGameNames.map((gs) => [gs.gameid, gs]));
 
       // Fetch Steam Workshop details for all games in parallel
       const publishedFilePromises = gameIds.map((gameid) =>
@@ -448,25 +491,13 @@ router.get(
       // Build response using cached data + database peaks + published file details
       const game_stats = gameIds.map((gameid, index) => {
         const cached = cachedGameData.get(gameid);
-        const dbStats = dbStatsMap.get(gameid.toString());
+        const gameidStr = gameid.toString();
+        const dbStats = dbStatsMap.get(gameidStr);
         const itemDetails = publishedFiles[index];
         const playerCountData = playerCounts[index];
 
-        let dailyPeak = -1;
-        let allTimePeak = -1;
-
-        if (dbStats) {
-          if (dbStats.allTimePeak && dbStats.dailyPeak) {
-            dailyPeak = dbStats.dailyPeak.playercount;
-            allTimePeak = dbStats.allTimePeak.playercount;
-          } else if (
-            dbStats.allTimePeak === undefined ||
-            dbStats.dailyPeak === undefined
-          ) {
-            dailyPeak = 0;
-            allTimePeak = 0;
-          }
-        }
+        const allTimePeak = allTimePeakMap.get(gameidStr) ?? -1;
+        const dailyPeak = dailyPeakMap.get(gameidStr) ?? -1;
 
         // Combine all data sources
         let preview_url = "";
