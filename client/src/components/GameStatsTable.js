@@ -74,6 +74,10 @@ const styles = (theme) => ({
     paddingLeft: 5,
     maxWidth: 300,
   },
+  playerCount: {
+    fontWeight: 700,
+    color: "#1a73e8",
+  },
 });
 
 const rows = [
@@ -295,9 +299,11 @@ class EnhancedTableRow extends React.PureComponent {
           </Link>
         </TableCell>
         <TableCell className={classes.tableCell} align="right">
-          {game.player_count !== undefined
-            ? game.player_count.toLocaleString()
-            : "?"}
+          <span className={classes.playerCount}>
+            {game.player_count !== undefined
+              ? game.player_count.toLocaleString()
+              : "?"}
+          </span>
         </TableCell>
         {!isMobile && (
           <TableCell className={classes.tableCell} align="right">
