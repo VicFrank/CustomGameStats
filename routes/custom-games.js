@@ -208,21 +208,25 @@ const GetStatsForGame = async (gameid) => {
 };
 
 const gameCache = new Map();
+const GAME_CACHE_TTL = 60 * 1000; // 1 minute
 
 const GetStatsForGameFromCache = async (gameid) => {
   const updateCache = async (gameid) => {
     const stats = await GetStatsForGame(gameid);
-    gameCache.set(gameid, stats);
+    gameCache.set(gameid, { data: stats, timestamp: Date.now() });
     return stats;
   };
 
-  if (gameCache.has(gameid)) {
-    // Return stale data immediately, but await the update to catch errors
-    const staleData = gameCache.get(gameid);
-    updateCache(gameid).catch((err) =>
-      console.log(`Error updating cache for ${gameid}:`, err),
-    );
-    return staleData;
+  const cached = gameCache.get(gameid);
+  if (cached) {
+    const isStale = Date.now() - cached.timestamp >= GAME_CACHE_TTL;
+    if (isStale) {
+      // Return stale data immediately, refresh in background
+      updateCache(gameid).catch((err) =>
+        console.log(`Error updating cache for ${gameid}:`, err),
+      );
+    }
+    return cached.data;
   }
 
   return await updateCache(gameid);
@@ -408,7 +412,8 @@ router.get("/QueryMetrics/:gameid", async function (req, res, next) {
   }
 
   try {
-    const stats = await GetStatsForGame(gameid);
+    const stats = await GetStatsForGameFromCache(gameid);
+    res.set("Cache-Control", `public, max-age=${GAME_CACHE_TTL / 1000}`);
     res.json(stats);
   } catch (err) {
     console.log(err);
