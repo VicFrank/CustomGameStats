@@ -9,7 +9,7 @@ import Paper from "@material-ui/core/Paper";
 import MenuItem from "@material-ui/core/MenuItem";
 import SearchIcon from "@material-ui/icons/Search";
 import { alpha } from "@material-ui/core/styles";
-import { withRouter } from "react-router";
+import { useNavigate } from "react-router-dom";
 
 function renderInput(inputProps) {
   const { InputProps, classes, ref, ...other } = inputProps;
@@ -151,7 +151,7 @@ class SearchBar extends React.Component {
   handleChange = (selectedItem, downshiftState) => {
     const character = selectedItem ? `/games/${selectedItem.gameid}` : "/";
 
-    this.props.history.push(character);
+    this.props.navigate(character);
   };
 
   render() {
@@ -222,6 +222,12 @@ class SearchBar extends React.Component {
 
 SearchBar.propTypes = {
   classes: PropTypes.object.isRequired,
+  navigate: PropTypes.func.isRequired,
 };
 
-export default withRouter(withStyles(styles)(SearchBar));
+function SearchBarWithNavigate(props) {
+  const navigate = useNavigate();
+  return <SearchBar {...props} navigate={navigate} />;
+}
+
+export default withStyles(styles)(SearchBarWithNavigate);

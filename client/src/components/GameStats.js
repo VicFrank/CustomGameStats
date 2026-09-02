@@ -1,6 +1,7 @@
 import React, { Component } from "react";
 import PropTypes from "prop-types";
 import { withStyles } from "@material-ui/core/styles";
+import { useParams } from "react-router-dom";
 import Typography from "@material-ui/core/Typography";
 import Paper from "@material-ui/core/Paper";
 import Link from "@material-ui/core/Link";
@@ -173,13 +174,13 @@ class GameStats extends Component {
   };
 
   componentDidMount() {
-    this.fetchData(this.props.match.params.id);
+    this.fetchData(this.props.gameId);
   }
 
   componentDidUpdate(prevProps) {
-    if (this.props.match.params.id !== prevProps.match.params.id) {
+    if (this.props.gameId !== prevProps.gameId) {
       this.setState({ isLoading: true, error: null });
-      this.fetchData(this.props.match.params.id);
+      this.fetchData(this.props.gameId);
     }
   }
 
@@ -428,6 +429,12 @@ class GameStats extends Component {
 
 GameStats.propTypes = {
   classes: PropTypes.object.isRequired,
+  gameId: PropTypes.string,
 };
 
-export default withStyles(styles)(GameStats);
+function GameStatsWithParams(props) {
+  const { id } = useParams();
+  return <GameStats {...props} gameId={id} />;
+}
+
+export default withStyles(styles)(GameStatsWithParams);

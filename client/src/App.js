@@ -1,5 +1,5 @@
 import React, { Component } from "react";
-import { Route, Switch } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 
 import GameStatsTable from "./components/GameStatsTable";
 import GameStats from "./components/GameStats";
@@ -12,12 +12,12 @@ class App extends Component {
     return (
       <div className="App">
         <NavBar />
-        <Switch>
-          <Route exact path="/" component={GameStatsTable} />
-          <Route path="/games/:id" component={GameStats} />
-          <Route path="/lobbies" component={Lobbies} />
-          <Route component={NoMatch} />
-        </Switch>
+        <Routes>
+          <Route path="/" element={<GameStatsTable />} />
+          <Route path="/games/:id" element={<GameStats />} />
+          <Route path="/lobbies" element={<Lobbies />} />
+          <Route element={<NoMatch />} />
+        </Routes>
       </div>
     );
   }

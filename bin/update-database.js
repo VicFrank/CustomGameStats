@@ -1,6 +1,5 @@
 #! /app/.heroku/node/bin/node
 
-const fetch = require("node-fetch");
 const models = require("../models/game-stats");
 const connectDB = require("../lib/db");
 

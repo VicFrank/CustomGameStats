@@ -1,4 +1,3 @@
-const fetch = require("node-fetch");
 // send a request to the homepage to update the cache
 
 let hitHomepage = async () => {
