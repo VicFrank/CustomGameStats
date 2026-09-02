@@ -10,6 +10,89 @@ const models = require("../models/game-stats");
 
 let cache = apicache.middleware;
 
+// --- Daily snapshot helpers (rank movement + update frequency) ---
+const getDateString = (d = new Date()) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+
+const MONTH_MS = 30 * 86400 * 1000;
+
+// Counts how many times a game's workshop "time_updated" changed between
+// consecutive snapshots, expressed as updates per month. Returns null when
+// there isn't enough history yet.
+const computeUpdateFrequency = (gameid, snapshots) => {
+  if (snapshots.length < 2) return null;
+
+  const firstTs = Date.parse(snapshots[0].date);
+  const lastTs = Date.parse(snapshots[snapshots.length - 1].date);
+  const months = Math.max((lastTs - firstTs) / MONTH_MS, 1);
+
+  let updates = 0;
+  let prevUpdated = null;
+  for (const snap of snapshots) {
+    const record = snap.games ? snap.games[gameid] : null;
+    const updated = record ? record.time_updated : null;
+    if (updated != null) {
+      if (prevUpdated != null && updated !== prevUpdated) updates++;
+      prevUpdated = updated;
+    }
+  }
+  return Math.round((updates / months) * 10) / 10;
+};
+
+// Chronological list of dates on which a game's workshop file was updated,
+// derived from consecutive daily snapshots (most recent first).
+const getUpdateHistory = (gameid, snapshots) => {
+  const events = [];
+  let prevUpdated = null;
+  for (const snap of snapshots) {
+    const record = snap.games ? snap.games[gameid] : null;
+    const updated = record ? record.time_updated : null;
+    if (updated != null && updated > 0) {
+      if (prevUpdated != null && updated !== prevUpdated) {
+        events.push({ date: snap.date, time_updated: updated });
+      }
+      prevUpdated = updated;
+    }
+  }
+  return events.reverse(); // newest first
+};
+
+// Most recent snapshots strictly before today, in chronological order.
+const getSnapshotHistory = async (limit = 90) => {
+  const today = getDateString();
+  const snapshots = await models.DailySnapshot.find({ date: { $lt: today } })
+    .sort({ date: -1 })
+    .limit(limit)
+    .select({ date: 1, games: 1, _id: 0 })
+    .lean();
+  return snapshots.reverse();
+};
+
+// Upsert today's snapshot with rank + workshop metadata for the given games.
+const recordDailySnapshot = async (gameStats) => {
+  const today = getDateString();
+  const games = {};
+  for (const game of gameStats) {
+    games[String(game.id)] = {
+      rank: game.rank,
+      time_created: game.time_created || 0,
+      time_updated: game.time_updated || 0,
+      subscriptions: game.subscriptions || 0,
+      favorited: game.favorites || 0,
+      views: game.views || 0,
+    };
+  }
+  await models.DailySnapshot.findOneAndUpdate(
+    { date: today },
+    { $set: { games } },
+    { upsert: true },
+  );
+};
+
 // API call caching (1 minute TTL)
 const API_CACHE_TTL = 60 * 1000; // 1 minute
 const playerCountCache = new Map(); // { gameid: { data, timestamp } }
@@ -165,6 +248,7 @@ const GetStatsForGame = async (gameid) => {
     let preview_url = "";
     let title = "Error";
     let last_update = 0;
+    let time_created = 0;
     let subscriptions = 0;
     let favorites = 0;
     let lifetime_subscriptions = 0;
@@ -175,6 +259,7 @@ const GetStatsForGame = async (gameid) => {
       preview_url = itemDetails.preview_url;
       title = itemDetails.title;
       last_update = itemDetails.time_updated;
+      time_created = itemDetails.time_created;
       subscriptions = itemDetails.subscriptions;
       favorites = itemDetails.favorited;
       lifetime_subscriptions = itemDetails.lifetime_subscriptions;
@@ -184,6 +269,17 @@ const GetStatsForGame = async (gameid) => {
       title = gameStats.gamename;
     }
 
+    // Best-effort update frequency + history from daily snapshots
+    let updateFrequency = null;
+    let updateHistory = [];
+    try {
+      const history = await getSnapshotHistory();
+      updateFrequency = computeUpdateFrequency(String(gameid), history);
+      updateHistory = getUpdateHistory(String(gameid), history);
+    } catch (err) {
+      console.log(`Error computing update history for ${gameid}:`, err);
+    }
+
     return {
       id: gameid,
       player_count: player_count,
@@ -191,6 +287,7 @@ const GetStatsForGame = async (gameid) => {
       preview_url: preview_url,
       title: title,
       last_update: last_update,
+      time_created: time_created,
       subscriptions: subscriptions,
       favorites: favorites,
       lifetime_subscriptions: lifetime_subscriptions,
@@ -198,6 +295,8 @@ const GetStatsForGame = async (gameid) => {
       views: views,
       dailyPeak: dailyPeak,
       allTimePeak: allTimePeak,
+      updateFrequency: updateFrequency,
+      updateHistory: updateHistory,
     };
   } catch (error) {
     console.log(error);
@@ -508,6 +607,7 @@ router.get(
         let preview_url = "";
         let title = "Unknown";
         let last_update = 0;
+        let time_created = 0;
         let subscriptions = 0;
         let favorites = 0;
         let lifetime_subscriptions = 0;
@@ -519,6 +619,7 @@ router.get(
           preview_url = itemDetails.preview_url;
           title = itemDetails.title;
           last_update = itemDetails.time_updated;
+          time_created = itemDetails.time_created;
           subscriptions = itemDetails.subscriptions;
           favorites = itemDetails.favorited;
           lifetime_subscriptions = itemDetails.lifetime_subscriptions;
@@ -546,6 +647,7 @@ router.get(
           preview_url: preview_url,
           title: title,
           last_update: last_update,
+          time_created: time_created,
           subscriptions: subscriptions,
           favorites: favorites,
           lifetime_subscriptions: lifetime_subscriptions,
@@ -556,7 +658,49 @@ router.get(
         };
       });
 
-      res.json(game_stats);
+      // Assign 1-based ranks in popular-games order
+      game_stats.forEach((game, index) => {
+        game.rank = index + 1;
+      });
+
+      // Record today's snapshot so rank movement / update frequency can be
+      // computed going forward
+      try {
+        await recordDailySnapshot(game_stats);
+      } catch (snapshotErr) {
+        console.log("Error recording daily snapshot:", snapshotErr);
+      }
+
+      // Rank movement + update frequency vs previous snapshots
+      const history = await getSnapshotHistory();
+      const prevSnapshot =
+        history.length > 0 ? history[history.length - 1] : null;
+
+      for (const game of game_stats) {
+        let rankChange = null;
+        if (prevSnapshot && prevSnapshot.games) {
+          const prevRank = prevSnapshot.games[String(game.id)]
+            ? prevSnapshot.games[String(game.id)].rank
+            : null;
+          if (prevRank != null) rankChange = prevRank - game.rank;
+        }
+        game.rankChange = rankChange;
+      }
+
+      // Global totals across all tracked games
+      const sum = (key) =>
+        game_stats.reduce((total, g) => total + (g[key] || 0), 0);
+      const totals = {
+        games: game_stats.length,
+        currentPlayers: sum("player_count"),
+        spectators: sum("spectator_count"),
+        subscriptions: sum("subscriptions"),
+        favorites: sum("favorites"),
+        views: sum("views"),
+        allTimePeak: sum("allTimePeak"),
+      };
+
+      res.json({ totals, games: game_stats });
     } catch (error) {
       console.log(error);
       return res.status(500).json({ error: "Internal server error" });

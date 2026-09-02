@@ -164,6 +164,8 @@ class GameStats extends Component {
     views: 0,
     dailyPeak: 0,
     allTimePeak: 0,
+    updateFrequency: null,
+    updateHistory: [],
     hourlyDataPoints: [],
     dailyDataPoints: [],
     isLoading: true,
@@ -261,6 +263,8 @@ class GameStats extends Component {
       preview_url,
       dailyPeak,
       allTimePeak,
+      updateFrequency,
+      updateHistory,
       isLoading,
       error,
     } = this.state;
@@ -372,6 +376,11 @@ class GameStats extends Component {
               label: "Last Updated",
               value: dayjs(last_update * 1000).fromNow(),
             },
+            {
+              label: "Update Frequency",
+              value:
+                updateFrequency != null ? `${updateFrequency} / month` : "N/A",
+            },
           ].map(({ label, value }, i, arr) => (
             <React.Fragment key={label}>
               <div className={classes.detailRow}>
@@ -381,6 +390,36 @@ class GameStats extends Component {
               {i < arr.length - 1 && <Divider />}
             </React.Fragment>
           ))}
+        </Paper>
+
+        {/* Update History */}
+        <Paper className={classes.detailsPaper} elevation={1}>
+          <Typography className={classes.detailsTitle}>
+            Update History
+          </Typography>
+          {updateHistory.length === 0 ? (
+            <div className={classes.detailRow}>
+              <span className={classes.detailLabel}>
+                No updates recorded yet
+              </span>
+            </div>
+          ) : (
+            updateHistory.map((event, i, arr) => (
+              <React.Fragment key={`${event.date}-${event.time_updated}`}>
+                <div className={classes.detailRow}>
+                  <span className={classes.detailLabel}>
+                    {dayjs
+                      .unix(event.time_updated)
+                      .format("MMM D, YYYY h:mm A")}
+                  </span>
+                  <span className={classes.detailValue}>
+                    {dayjs.unix(event.time_updated).fromNow()}
+                  </span>
+                </div>
+                {i < arr.length - 1 && <Divider />}
+              </React.Fragment>
+            ))
+          )}
         </Paper>
       </div>
     );

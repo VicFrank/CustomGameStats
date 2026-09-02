@@ -9,33 +9,36 @@ import SvgIcon from "@material-ui/core/SvgIcon";
 
 import SearchBar from "./SearchBar";
 
-const styles = theme => ({
+const styles = (theme) => ({
   root: {
-    width: "100%"
+    width: "100%",
+  },
+  appBar: {
+    backgroundColor: "#1a73e8",
   },
   grow: {
-    flexGrow: 1
+    flexGrow: 1,
   },
   menuButton: {
     marginLeft: -12,
-    marginRight: 20
+    marginRight: 20,
   },
   title: {
     display: "none",
     [theme.breakpoints.up("sm")]: {
-      display: "block"
-    }
+      display: "block",
+    },
   },
   icon: {
     display: "none",
     [theme.breakpoints.down("xs")]: {
-      display: "block"
-    }
+      display: "block",
+    },
   },
   inputRoot: {
     color: "inherit",
-    width: "100%"
-  }
+    width: "100%",
+  },
 });
 
 function HomeIcon(props) {
@@ -47,11 +50,11 @@ function HomeIcon(props) {
 }
 
 class NavBar extends React.Component {
-  onSearchBarChange = event => {
+  onSearchBarChange = (event) => {
     console.log(event.target.value);
   };
 
-  onMenuButtonClicked = event => {
+  onMenuButtonClicked = (event) => {
     console.log(event);
   };
 
@@ -60,7 +63,7 @@ class NavBar extends React.Component {
 
     return (
       <div className={classes.root}>
-        <AppBar position="static">
+        <AppBar position="static" className={classes.appBar}>
           <Toolbar>
             <NavLink
               style={{ textDecoration: "none", color: "inherit" }}
@@ -86,7 +89,7 @@ class NavBar extends React.Component {
 }
 
 NavBar.propTypes = {
-  classes: PropTypes.object.isRequired
+  classes: PropTypes.object.isRequired,
 };
 
 export default withStyles(styles)(NavBar);

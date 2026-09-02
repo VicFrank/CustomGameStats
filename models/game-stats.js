@@ -62,6 +62,24 @@ const PopularGamesCache = mongoose.model(
   PopularGamesCacheSchema,
 );
 
+// Daily rank + workshop metadata snapshot. Used to compute rank movement
+// (▲/▼ day-over-day) and update frequency for each custom game.
+const DailySnapshotSchema = new Schema({
+  date: {
+    type: String,
+    required: true,
+    unique: true,
+    index: true,
+  }, // YYYY-MM-DD
+  games: {
+    // { gameid: { rank, time_created, time_updated, subscriptions, favorited, views } }
+    type: Schema.Types.Mixed,
+    default: {},
+  },
+});
+
+const DailySnapshot = mongoose.model("DailySnapshot", DailySnapshotSchema);
+
 // GameStats.find({gameid: gameid}).populate('playerCounts').exec(function(err, stats) {
 //   stats.playerCounts;
 // });
@@ -168,4 +186,5 @@ module.exports = {
   PlayerCount: PlayerCount,
   DailyRecord: DailyRecord,
   PopularGamesCache: PopularGamesCache,
+  DailySnapshot: DailySnapshot,
 };
