@@ -2,6 +2,9 @@
   "name": "custom-game-stats",
   "version": "0.0.0",
   "private": true,
+  "engines": {
+    "node": "22.x"
+  },
   "scripts": {
     "client-install": "npm install --prefix client",
     "start": "node index.js",
